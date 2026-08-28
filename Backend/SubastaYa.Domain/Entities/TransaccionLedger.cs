@@ -10,8 +10,6 @@ public class TransaccionLedger
     public decimal Monto { get; set; }
     public DateTime Fecha { get; set; }
     public string Descripcion { get; set; } = string.Empty;
-
-    // Opcional: trazabilidad hacia la subasta que originó el movimiento.
     public int? SubastaId { get; set; }
 
     public Billetera Billetera { get; set; } = null!;
