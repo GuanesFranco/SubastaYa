@@ -28,16 +28,7 @@ public class SubastaYaDbContext : DbContext
 
             entity.HasOne(u => u.Billetera)
                 .WithOne(b => b.Usuario)
-                .HasForeignKey<Billetera>(b => b.UsuarioId);
-
-            entity.HasMany(u => u.SubastasPublicadas)
-                .WithOne(s => s.Vendedor)
-                .HasForeignKey(s => s.VendedorId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasMany(u => u.Pujas)
-                .WithOne(p => p.Comprador)
-                .HasForeignKey(p => p.CompradorId)
+                .HasForeignKey<Billetera>(b => b.UsuarioId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -48,14 +39,6 @@ public class SubastaYaDbContext : DbContext
             entity.HasMany(b => b.Movimientos)
                 .WithOne(t => t.Billetera)
                 .HasForeignKey(t => t.BilleteraId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        modelBuilder.Entity<Categoria>(entity =>
-        {
-            entity.HasMany(c => c.Subastas)
-                .WithOne(s => s.Categoria)
-                .HasForeignKey(s => s.CategoriaId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
