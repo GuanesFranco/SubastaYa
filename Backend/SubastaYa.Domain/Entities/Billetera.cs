@@ -47,6 +47,11 @@ public class Billetera
     public void Liberar(decimal monto)
     {
         ValidarMontoPositivo(monto);
+        if (monto > SaldoRetenido)
+        {
+            throw new InvalidOperationException("No se puede liberar un monto mayor al saldo retenido actual.");
+        }
+
         SaldoRetenido -= monto;
         Version++;
     }
@@ -54,6 +59,11 @@ public class Billetera
     public void Debitar(decimal monto)
     {
         ValidarMontoPositivo(monto);
+        if (monto > SaldoRetenido)
+        {
+            throw new InvalidOperationException("No se puede debitar un monto mayor al saldo retenido actual.");
+        }
+
         SaldoTotal -= monto;
         SaldoRetenido -= monto;
         Version++;
