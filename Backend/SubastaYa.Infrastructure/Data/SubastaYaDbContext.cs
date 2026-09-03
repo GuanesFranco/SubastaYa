@@ -94,12 +94,20 @@ public class SubastaYaDbContext : DbContext
 
         modelBuilder.Entity<AuditoriaLog>(entity =>
         {
+            entity.HasKey(e => e.Id);
+            
+            entity.Property(e => e.Entidad)
+                  .HasConversion<string>();
+                  
+            entity.Property(e => e.Accion)
+                  .HasConversion<string>();
+
             entity.Property(a => a.DetalleJson).HasColumnType("jsonb");
 
-            entity.HasOne(a => a.Usuario)
-                .WithMany()
-                .HasForeignKey(a => a.UsuarioId)
-                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Usuario)
+                  .WithMany()
+                  .HasForeignKey(e => e.UsuarioId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
