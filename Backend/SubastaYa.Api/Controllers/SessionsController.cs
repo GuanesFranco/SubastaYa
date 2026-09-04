@@ -18,15 +18,8 @@ public class SessionsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        try
-        {
-            var query = new LoginQuery(dto);
-            var result = await _handler.Handle(query);
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { error = ex.Message });
-        }
+        var query = new LoginQuery(dto);
+        var result = await _handler.Handle(query);
+        return Ok(result);
     }
 }
