@@ -18,15 +18,8 @@ public class UsuariosController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Register([FromBody] RegistrarUsuarioDto dto)
     {
-        try
-        {
-            var command = new RegistrarUsuarioCommand(dto);
-            var result = await _handler.Handle(command);
-            return StatusCode(201, result); // 201 Created
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = new RegistrarUsuarioCommand(dto);
+        var result = await _handler.Handle(command);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 }

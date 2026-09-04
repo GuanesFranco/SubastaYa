@@ -1,10 +1,14 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SubastaYa.Api.Middleware;
 using SubastaYa.Application.Interfaces;
 using SubastaYa.Application.UseCases.Users.Commands;
 using SubastaYa.Application.UseCases.Users.Queries;
+using SubastaYa.Application.UseCases.Wallets.Commands;
+using SubastaYa.Application.UseCases.Wallets.Queries;
 using SubastaYa.Infrastructure.Auth;
 using SubastaYa.Infrastructure.Data;
 using SubastaYa.Infrastructure.Persistence;
@@ -13,11 +17,14 @@ using SubastaYa.Domain.Interfaces;
 using SubastaYa.Infrastructure.Data.Repositories;
 using SubastaYa.Application.UseCases.Categories.Queries;
 using SubastaYa.Application.UseCases.Auctions.Commands;
+using SubastaYa.Application.UseCases.Auctions.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 
 // Swagger config para aceptar JWT
@@ -53,17 +60,23 @@ builder.Services.AddDbContext<SubastaYaDbContext>(options =>
 
 // Configuración DI
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IBilleteraRepository, BilleteraRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddSingleton<IJwtProvider, JwtProvider>();
 
 builder.Services.AddScoped<RegistrarUsuarioCommandHandler>();
 builder.Services.AddScoped<LoginQueryHandler>();
+builder.Services.AddScoped<GetWalletBalanceQueryHandler>();
+builder.Services.AddScoped<DepositCommandHandler>();
+builder.Services.AddScoped<GetWalletTransactionsQueryHandler>();
 
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<ISubastaRepository, SubastaRepository>();
 builder.Services.AddScoped<ListarCategoriasQueryHandler>();
 builder.Services.AddScoped<CrearSubastaCommandHandler>();
+builder.Services.AddScoped<ListarSubastasQueryHandler>();
+builder.Services.AddScoped<ObtenerSubastaQueryHandler>();
 
 // Configuración JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -90,6 +103,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
+app.UseMiddleware<ExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
