@@ -33,25 +33,18 @@ public class SubastasController : ControllerBase
     [Authorize]
     public async Task<IActionResult> CrearSubasta([FromBody] CrearSubastaDto dto)
     {
-        try
+        // Extraer el VendedorId del token JWT (usamos Sub porque ahí guardamos el ID)
+        var userIdClaim = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int vendedorId))
         {
-            // Extraer el VendedorId del token JWT (usamos Sub porque ahí guardamos el ID)
-            var userIdClaim = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int vendedorId))
-            {
-                return Unauthorized(new { error = "Token inválido o ID de usuario no encontrado en el token." });
-            }
+            return Unauthorized(new { error = "Token inválido o ID de usuario no encontrado en el token." });
+        }
 
-            var command = new CrearSubastaCommand(vendedorId, dto);
-            var subastaId = await _crearSubastaHandler.Handle(command);
-            
-            return CreatedAtAction(nameof(CrearSubasta), new { id = subastaId }, new { id = subastaId });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = new CrearSubastaCommand(vendedorId, dto);
+        var subastaId = await _crearSubastaHandler.Handle(command);
+        
+        return CreatedAtAction(nameof(CrearSubasta), new { id = subastaId }, new { id = subastaId });
     }
 
     [HttpGet]
@@ -73,15 +66,8 @@ public class SubastasController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetSubasta(int id)
     {
-        try
-        {
-            var query = new ObtenerSubastaQuery(id);
-            var result = await _obtenerSubastaHandler.Handle(query);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
+        var query = new ObtenerSubastaQuery(id);
+        var result = await _obtenerSubastaHandler.Handle(query);
+        return Ok(result);
     }
 }

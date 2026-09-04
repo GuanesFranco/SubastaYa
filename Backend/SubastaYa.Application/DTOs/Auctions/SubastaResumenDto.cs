@@ -8,5 +8,7 @@ public record SubastaResumenDto(
     string UrlImagen,
     decimal PrecioActual,
     DateTime FechaFin,
-    EstadoSubasta Estado
+    SubastaYa.Domain.Enums.EstadoSubasta Estado,
+    string CategoriaNombre,
+    int CantidadPujas
 );

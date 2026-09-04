@@ -1,5 +1,5 @@
 using SubastaYa.Application.DTOs.Auctions;
-using SubastaYa.Domain.Interfaces;
+using SubastaYa.Application.Interfaces;
 
 namespace SubastaYa.Application.UseCases.Auctions.Queries;
 
@@ -22,7 +22,9 @@ public class ListarMisSubastasQueryHandler
             s.UrlImagen,
             s.PrecioActual,
             s.FechaFin,
-            s.Estado
+            s.Estado,
+            s.Categoria.Nombre,
+            s.Pujas.Count
         ));
     }
 }

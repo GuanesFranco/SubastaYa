@@ -1,5 +1,5 @@
 using SubastaYa.Application.DTOs.Categories;
-using SubastaYa.Domain.Interfaces;
+using SubastaYa.Application.Interfaces;
 
 namespace SubastaYa.Application.UseCases.Categories.Queries;
 
