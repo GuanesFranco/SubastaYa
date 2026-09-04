@@ -14,11 +14,16 @@ public class UsuariosController : ControllerBase
 {
     private readonly RegistrarUsuarioCommandHandler _handler;
     private readonly ListarMisSubastasQueryHandler _listarMisSubastasHandler;
+    private readonly ListarMisPujasQueryHandler _listarMisPujasHandler;
 
-    public UsuariosController(RegistrarUsuarioCommandHandler handler, ListarMisSubastasQueryHandler listarMisSubastasHandler)
+    public UsuariosController(
+        RegistrarUsuarioCommandHandler handler,
+        ListarMisSubastasQueryHandler listarMisSubastasHandler,
+        ListarMisPujasQueryHandler listarMisPujasHandler)
     {
         _handler = handler;
         _listarMisSubastasHandler = listarMisSubastasHandler;
+        _listarMisPujasHandler = listarMisPujasHandler;
     }
 
     [HttpPost]
@@ -42,6 +47,22 @@ public class UsuariosController : ControllerBase
 
         var query = new ListarMisSubastasQuery(vendedorId);
         var result = await _listarMisSubastasHandler.Handle(query);
+        return Ok(result);
+    }
+
+    [HttpGet("me/bids")]
+    [Authorize]
+    public async Task<IActionResult> GetMisPujas()
+    {
+        var userIdClaim = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int compradorId))
+        {
+            return Unauthorized(new { error = "Token inválido o ID de usuario no encontrado en el token." });
+        }
+
+        var query = new ListarMisPujasQuery(compradorId);
+        var result = await _listarMisPujasHandler.Handle(query);
         return Ok(result);
     }
 }

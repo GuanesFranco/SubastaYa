@@ -82,4 +82,25 @@ public class SubastaRepository : ISubastaRepository
             .AsNoTracking()
             .ToListAsync();
     }
+
+    public async Task<Subasta?> ObtenerParaPujarAsync(int id)
+    {
+        return await _context.Subastas
+            .Include(s => s.PujaLider)
+            .FirstOrDefaultAsync(s => s.Id == id);
+    }
+
+    public async Task AgregarPujaAsync(Puja puja)
+    {
+        await _context.Pujas.AddAsync(puja);
+    }
+
+    public async Task<IEnumerable<Subasta>> ObtenerSubastasDondeParticipoAsync(int compradorId)
+    {
+        return await _context.Subastas
+            .AsNoTracking()
+            .Where(s => s.Pujas.Any(p => p.CompradorId == compradorId))
+            .OrderByDescending(s => s.FechaFin)
+            .ToListAsync();
+    }
 }

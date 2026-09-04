@@ -12,4 +12,7 @@ public interface ISubastaRepository
     Task<Subasta?> ObtenerDetalleAsync(int id);
     Task<IEnumerable<Puja>> ObtenerPujasAsync(int subastaId);
     Task<IEnumerable<Subasta>> ObtenerSubastasPorVendedorAsync(int vendedorId);
+    Task<Subasta?> ObtenerParaPujarAsync(int id);
+    Task AgregarPujaAsync(Puja puja);
+    Task<IEnumerable<Subasta>> ObtenerSubastasDondeParticipoAsync(int compradorId);
 }
