@@ -109,5 +109,11 @@ public class SubastaYaDbContext : DbContext
                   .HasForeignKey(e => e.UsuarioId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
+
+        modelBuilder.Entity<Categoria>().HasData(
+            new Categoria { Id = 1, Nombre = "Tecnología", UrlIcono = "https://example.com/icon-tech.png" },
+            new Categoria { Id = 2, Nombre = "Vehículos", UrlIcono = "https://example.com/icon-car.png" },
+            new Categoria { Id = 3, Nombre = "Coleccionables", UrlIcono = "https://example.com/icon-collect.png" }
+        );
     }
 }
