@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SubastaYa.Domain.Exceptions;
 
 namespace SubastaYa.Api.Middleware;
 
@@ -33,6 +34,14 @@ public class ExceptionMiddleware
                 context,
                 StatusCodes.Status409Conflict,
                 "La operación no pudo completarse por un conflicto de concurrencia. Intentá de nuevo.");
+        }
+        catch (FondosInsuficientesException ex)
+        {
+            await EscribirErrorAsync(context, StatusCodes.Status422UnprocessableEntity, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            await EscribirErrorAsync(context, StatusCodes.Status400BadRequest, ex.Message);
         }
         catch (ArgumentException ex)
         {

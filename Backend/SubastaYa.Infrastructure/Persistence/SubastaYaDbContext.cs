@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SubastaYa.Domain.Entities;
 using SubastaYa.Domain.Enums;
 
-namespace SubastaYa.Infrastructure.Data;
+namespace SubastaYa.Infrastructure.Persistence;
 
 public class SubastaYaDbContext : DbContext
 {

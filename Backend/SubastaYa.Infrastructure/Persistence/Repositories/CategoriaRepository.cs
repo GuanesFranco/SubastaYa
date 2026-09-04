@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SubastaYa.Domain.Entities;
 using SubastaYa.Application.Interfaces;
 
-namespace SubastaYa.Infrastructure.Data.Repositories;
+namespace SubastaYa.Infrastructure.Persistence.Repositories;
 
 public class CategoriaRepository : ICategoriaRepository
 {

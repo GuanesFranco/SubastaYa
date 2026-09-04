@@ -28,7 +28,7 @@ public class RegistrarUsuarioCommandHandler
         var existe = await _usuarioRepository.ObtenerPorEmailAsync(command.Dto.Email);
         if (existe != null)
         {
-            throw new InvalidOperationException("El correo electrónico ya está registrado.");
+            throw new SubastaYa.Domain.Exceptions.DomainException("El correo electrónico ya está registrado.");
         }
 
         var hash = _passwordHasher.Hash(command.Dto.Password);
