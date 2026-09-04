@@ -57,4 +57,23 @@ public class SubastaRepository : ISubastaRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == id);
     }
+
+    public async Task<IEnumerable<Puja>> ObtenerPujasAsync(int subastaId)
+    {
+        return await _context.Pujas
+            .Include(p => p.Comprador)
+            .Where(p => p.SubastaId == subastaId)
+            .OrderByDescending(p => p.FechaPuja)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Subasta>> ObtenerSubastasPorVendedorAsync(int vendedorId)
+    {
+        return await _context.Subastas
+            .Where(s => s.VendedorId == vendedorId)
+            .OrderByDescending(s => s.FechaInicio)
+            .AsNoTracking()
+            .ToListAsync();
+    }
 }

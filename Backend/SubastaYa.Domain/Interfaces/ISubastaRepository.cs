@@ -10,4 +10,6 @@ public interface ISubastaRepository
     Task<(IEnumerable<Subasta> Items, int Total)> ObtenerFiltradasAsync(
         int? categoriaId, EstadoSubasta? estado, decimal? precioMin, decimal? precioMax, string? orderBy, int page, int pageSize);
     Task<Subasta?> ObtenerDetalleAsync(int id);
+    Task<IEnumerable<Puja>> ObtenerPujasAsync(int subastaId);
+    Task<IEnumerable<Subasta>> ObtenerSubastasPorVendedorAsync(int vendedorId);
 }

@@ -15,15 +15,18 @@ public class SubastasController : ControllerBase
     private readonly CrearSubastaCommandHandler _crearSubastaHandler;
     private readonly ListarSubastasQueryHandler _listarSubastasHandler;
     private readonly ObtenerSubastaQueryHandler _obtenerSubastaHandler;
+    private readonly ListarPujasQueryHandler _listarPujasHandler;
 
     public SubastasController(
         CrearSubastaCommandHandler crearSubastaHandler,
         ListarSubastasQueryHandler listarSubastasHandler,
-        ObtenerSubastaQueryHandler obtenerSubastaHandler)
+        ObtenerSubastaQueryHandler obtenerSubastaHandler,
+        ListarPujasQueryHandler listarPujasHandler)
     {
         _crearSubastaHandler = crearSubastaHandler;
         _listarSubastasHandler = listarSubastasHandler;
         _obtenerSubastaHandler = obtenerSubastaHandler;
+        _listarPujasHandler = listarPujasHandler;
     }
 
     [HttpPost]
@@ -56,6 +59,14 @@ public class SubastasController : ControllerBase
     {
         var query = new ListarSubastasQuery(filtro);
         var result = await _listarSubastasHandler.Handle(query);
+        return Ok(result);
+    }
+
+    [HttpGet("{id}/bids")]
+    public async Task<IActionResult> GetPujas(int id)
+    {
+        var query = new ListarPujasQuery(id);
+        var result = await _listarPujasHandler.Handle(query);
         return Ok(result);
     }
 

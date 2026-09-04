@@ -77,6 +77,8 @@ builder.Services.AddScoped<ListarCategoriasQueryHandler>();
 builder.Services.AddScoped<CrearSubastaCommandHandler>();
 builder.Services.AddScoped<ListarSubastasQueryHandler>();
 builder.Services.AddScoped<ObtenerSubastaQueryHandler>();
+builder.Services.AddScoped<ListarPujasQueryHandler>();
+builder.Services.AddScoped<ListarMisSubastasQueryHandler>();
 
 // Configuración JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
