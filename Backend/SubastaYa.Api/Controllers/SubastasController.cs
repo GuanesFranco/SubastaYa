@@ -16,34 +16,44 @@ public class SubastasController : ControllerBase
     private readonly ListarSubastasQueryHandler _listarSubastasHandler;
     private readonly ObtenerSubastaQueryHandler _obtenerSubastaHandler;
     private readonly ListarPujasQueryHandler _listarPujasHandler;
+    private readonly RealizarPujaCommandHandler _realizarPujaHandler;
 
     public SubastasController(
         CrearSubastaCommandHandler crearSubastaHandler,
         ListarSubastasQueryHandler listarSubastasHandler,
         ObtenerSubastaQueryHandler obtenerSubastaHandler,
-        ListarPujasQueryHandler listarPujasHandler)
+        ListarPujasQueryHandler listarPujasHandler,
+        RealizarPujaCommandHandler realizarPujaHandler)
     {
         _crearSubastaHandler = crearSubastaHandler;
         _listarSubastasHandler = listarSubastasHandler;
         _obtenerSubastaHandler = obtenerSubastaHandler;
         _listarPujasHandler = listarPujasHandler;
+        _realizarPujaHandler = realizarPujaHandler;
+    }
+
+    private int? UsuarioIdActual
+    {
+        get
+        {
+            var claim = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(claim, out var id) ? id : null;
+        }
     }
 
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> CrearSubasta([FromBody] CrearSubastaDto dto)
     {
-        // Extraer el VendedorId del token JWT (usamos Sub porque ahí guardamos el ID)
-        var userIdClaim = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int vendedorId))
+        var vendedorId = UsuarioIdActual;
+        if (vendedorId == null)
         {
             return Unauthorized(new { error = "Token inválido o ID de usuario no encontrado en el token." });
         }
 
-        var command = new CrearSubastaCommand(vendedorId, dto);
+        var command = new CrearSubastaCommand(vendedorId.Value, dto);
         var subastaId = await _crearSubastaHandler.Handle(command);
-        
+
         return CreatedAtAction(nameof(CrearSubasta), new { id = subastaId }, new { id = subastaId });
     }
 
@@ -61,6 +71,22 @@ public class SubastasController : ControllerBase
         var query = new ListarPujasQuery(id);
         var result = await _listarPujasHandler.Handle(query);
         return Ok(result);
+    }
+
+    [HttpPost("{id}/bids")]
+    [Authorize]
+    public async Task<IActionResult> Pujar(int id, [FromBody] PujaRequestDto dto)
+    {
+        var compradorId = UsuarioIdActual;
+        if (compradorId == null)
+        {
+            return Unauthorized(new { error = "Token inválido o ID de usuario no encontrado en el token." });
+        }
+
+        var command = new RealizarPujaCommand(id, compradorId.Value, dto.Monto);
+        var result = await _realizarPujaHandler.Handle(command);
+
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 
     [HttpGet("{id}")]

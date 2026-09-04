@@ -28,6 +28,13 @@ public class ExceptionMiddleware
         {
             await EscribirErrorAsync(context, StatusCodes.Status404NotFound, ex.Message);
         }
+        catch (ConflictoConcurrenciaException)
+        {
+            await EscribirErrorAsync(
+                context,
+                StatusCodes.Status409Conflict,
+                "La operación no pudo completarse por un conflicto de concurrencia. Intentá de nuevo.");
+        }
         catch (DbUpdateConcurrencyException)
         {
             await EscribirErrorAsync(
@@ -36,6 +43,10 @@ public class ExceptionMiddleware
                 "La operación no pudo completarse por un conflicto de concurrencia. Intentá de nuevo.");
         }
         catch (FondosInsuficientesException ex)
+        {
+            await EscribirErrorAsync(context, StatusCodes.Status422UnprocessableEntity, ex.Message);
+        }
+        catch (MontoInsuficienteException ex)
         {
             await EscribirErrorAsync(context, StatusCodes.Status422UnprocessableEntity, ex.Message);
         }

@@ -1,5 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using SubastaYa.Application.Interfaces;
-using SubastaYa.Infrastructure.Persistence;
+using SubastaYa.Domain.Exceptions;
 
 namespace SubastaYa.Infrastructure.Persistence;
 
@@ -12,8 +13,21 @@ public class UnitOfWork : IUnitOfWork
         _ctx = ctx;
     }
 
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return _ctx.SaveChangesAsync(cancellationToken);
+        try
+        {
+            return await _ctx.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConflictoConcurrenciaException(
+                "Conflicto de concurrencia al guardar los cambios.", ex);
+        }
+    }
+
+    public void DescartarCambios()
+    {
+        _ctx.ChangeTracker.Clear();
     }
 }
