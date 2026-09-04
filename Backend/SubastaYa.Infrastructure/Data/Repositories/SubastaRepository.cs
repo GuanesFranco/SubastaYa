@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SubastaYa.Domain.Entities;
 using SubastaYa.Domain.Enums;
-using SubastaYa.Domain.Interfaces;
+using SubastaYa.Application.Interfaces;
 
 namespace SubastaYa.Infrastructure.Data.Repositories;
 
@@ -27,7 +27,11 @@ public class SubastaRepository : ISubastaRepository
     public async Task<(IEnumerable<Subasta> Items, int Total)> ObtenerFiltradasAsync(
         int? categoriaId, EstadoSubasta? estado, decimal? precioMin, decimal? precioMax, string? orderBy, int page, int pageSize)
     {
-        var query = _context.Subastas.AsNoTracking().AsQueryable();
+        var query = _context.Subastas
+            .Include(s => s.Categoria)
+            .Include(s => s.Pujas)
+            .AsNoTracking()
+            .AsQueryable();
 
         if (categoriaId.HasValue) query = query.Where(s => s.CategoriaId == categoriaId.Value);
         if (estado.HasValue) query = query.Where(s => s.Estado == estado.Value);
@@ -71,6 +75,8 @@ public class SubastaRepository : ISubastaRepository
     public async Task<IEnumerable<Subasta>> ObtenerSubastasPorVendedorAsync(int vendedorId)
     {
         return await _context.Subastas
+            .Include(s => s.Categoria)
+            .Include(s => s.Pujas)
             .Where(s => s.VendedorId == vendedorId)
             .OrderByDescending(s => s.FechaInicio)
             .AsNoTracking()

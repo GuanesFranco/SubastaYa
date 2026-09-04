@@ -13,7 +13,7 @@ using SubastaYa.Infrastructure.Auth;
 using SubastaYa.Infrastructure.Data;
 using SubastaYa.Infrastructure.Persistence;
 using SubastaYa.Infrastructure.Persistence.Repositories;
-using SubastaYa.Domain.Interfaces;
+using SubastaYa.Application.Interfaces;
 using SubastaYa.Infrastructure.Data.Repositories;
 using SubastaYa.Application.UseCases.Categories.Queries;
 using SubastaYa.Application.UseCases.Auctions.Commands;

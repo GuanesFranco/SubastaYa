@@ -1,6 +1,6 @@
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Common;
-using SubastaYa.Domain.Interfaces;
+using SubastaYa.Application.Interfaces;
 
 namespace SubastaYa.Application.UseCases.Auctions.Queries;
 
@@ -25,7 +25,9 @@ public class ListarSubastasQueryHandler
             s.UrlImagen,
             s.PrecioActual,
             s.FechaFin,
-            s.Estado
+            s.Estado,
+            s.Categoria.Nombre,
+            s.Pujas.Count
         ));
 
         return new PaginatedResult<SubastaResumenDto>

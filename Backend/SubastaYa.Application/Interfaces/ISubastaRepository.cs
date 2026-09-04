@@ -1,7 +1,7 @@
 using SubastaYa.Domain.Entities;
 using SubastaYa.Domain.Enums;
 
-namespace SubastaYa.Domain.Interfaces;
+namespace SubastaYa.Application.Interfaces;
 
 public interface ISubastaRepository
 {

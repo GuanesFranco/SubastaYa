@@ -1,5 +1,5 @@
 using SubastaYa.Application.DTOs.Auctions;
-using SubastaYa.Domain.Interfaces;
+using SubastaYa.Application.Interfaces;
 
 namespace SubastaYa.Application.UseCases.Auctions.Queries;
 
@@ -20,7 +20,7 @@ public class ListarPujasQueryHandler
             p.Id,
             p.Monto,
             p.FechaPuja,
-            p.Comprador.Nombre
+            p.Comprador.Nombre.Substring(0, Math.Min(2, p.Comprador.Nombre.Length)) + "***"
         ));
     }
 }

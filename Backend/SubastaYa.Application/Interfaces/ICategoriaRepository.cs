@@ -1,4 +1,4 @@
-namespace SubastaYa.Domain.Interfaces;
+namespace SubastaYa.Application.Interfaces;
 
 using SubastaYa.Domain.Entities;
 

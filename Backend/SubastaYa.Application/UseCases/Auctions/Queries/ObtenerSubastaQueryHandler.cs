@@ -1,5 +1,5 @@
 using SubastaYa.Application.DTOs.Auctions;
-using SubastaYa.Domain.Interfaces;
+using SubastaYa.Application.Interfaces;
 
 namespace SubastaYa.Application.UseCases.Auctions.Queries;
 
