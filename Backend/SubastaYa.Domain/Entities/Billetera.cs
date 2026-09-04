@@ -37,7 +37,7 @@ public class Billetera
         ValidarMontoPositivo(monto);
         if (monto > SaldoDisponible)
         {
-            throw new InvalidOperationException("Saldo disponible insuficiente para retener el monto solicitado.");
+            throw new SubastaYa.Domain.Exceptions.FondosInsuficientesException("Saldo disponible insuficiente para retener el monto solicitado.");
         }
 
         SaldoRetenido += monto;
@@ -49,7 +49,7 @@ public class Billetera
         ValidarMontoPositivo(monto);
         if (monto > SaldoRetenido)
         {
-            throw new InvalidOperationException("No se puede liberar un monto mayor al saldo retenido actual.");
+            throw new SubastaYa.Domain.Exceptions.DomainException("No se puede liberar un monto mayor al saldo retenido actual.");
         }
 
         SaldoRetenido -= monto;
@@ -61,7 +61,7 @@ public class Billetera
         ValidarMontoPositivo(monto);
         if (monto > SaldoRetenido)
         {
-            throw new InvalidOperationException("No se puede debitar un monto mayor al saldo retenido actual.");
+            throw new SubastaYa.Domain.Exceptions.DomainException("No se puede debitar un monto mayor al saldo retenido actual.");
         }
 
         SaldoTotal -= monto;
@@ -80,7 +80,7 @@ public class Billetera
     {
         if (monto <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(monto), "El monto debe ser positivo.");
+            throw new SubastaYa.Domain.Exceptions.DomainException("El monto debe ser positivo.");
         }
     }
 }

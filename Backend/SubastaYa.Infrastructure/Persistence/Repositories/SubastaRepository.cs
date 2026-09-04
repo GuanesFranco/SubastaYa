@@ -3,7 +3,7 @@ using SubastaYa.Domain.Entities;
 using SubastaYa.Domain.Enums;
 using SubastaYa.Application.Interfaces;
 
-namespace SubastaYa.Infrastructure.Data.Repositories;
+namespace SubastaYa.Infrastructure.Persistence.Repositories;
 
 public class SubastaRepository : ISubastaRepository
 {

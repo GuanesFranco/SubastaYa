@@ -1,5 +1,5 @@
 using SubastaYa.Application.Interfaces;
-using SubastaYa.Infrastructure.Data;
+using SubastaYa.Infrastructure.Persistence;
 
 namespace SubastaYa.Infrastructure.Persistence;
 

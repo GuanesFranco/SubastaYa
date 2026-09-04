@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SubastaYa.Application.Interfaces;
 using SubastaYa.Domain.Entities;
-using SubastaYa.Infrastructure.Data;
+using SubastaYa.Infrastructure.Persistence;
 
 namespace SubastaYa.Infrastructure.Persistence.Repositories;
 

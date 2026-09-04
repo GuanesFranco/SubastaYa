@@ -1,10 +1,10 @@
-ï»¿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace SubastaYa.Infrastructure.Data.Migrations
+namespace SubastaYa.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class SeedCategories : Migration
@@ -21,8 +21,8 @@ namespace SubastaYa.Infrastructure.Data.Migrations
                 columns: new[] { "Id", "Nombre", "UrlIcono" },
                 values: new object[,]
                 {
-                    { 1, "TecnologÃ­a", "https://example.com/icon-tech.png" },
-                    { 2, "VehÃ­culos", "https://example.com/icon-car.png" },
+                    { 1, "Tecnología", "https://example.com/icon-tech.png" },
+                    { 2, "Vehículos", "https://example.com/icon-car.png" },
                     { 3, "Coleccionables", "https://example.com/icon-collect.png" }
                 });
 

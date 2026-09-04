@@ -21,13 +21,13 @@ public class CrearSubastaCommandHandler
 
         if (dto.FechaInicio >= dto.FechaFin)
         {
-            throw new InvalidOperationException("La fecha de inicio debe ser anterior a la fecha de fin.");
+            throw new SubastaYa.Domain.Exceptions.DomainException("La fecha de inicio debe ser anterior a la fecha de fin.");
         }
 
         bool categoriaExiste = await _subastaRepository.ExisteCategoriaAsync(dto.CategoriaId);
         if (!categoriaExiste)
         {
-            throw new InvalidOperationException("La categoría especificada no existe.");
+            throw new SubastaYa.Domain.Exceptions.DomainException("La categoría especificada no existe.");
         }
 
         var subasta = new Subasta(

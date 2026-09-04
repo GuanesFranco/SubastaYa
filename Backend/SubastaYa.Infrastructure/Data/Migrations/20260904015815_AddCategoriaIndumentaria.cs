@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace SubastaYa.Infrastructure.Data.Migrations
+namespace SubastaYa.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class AddCategoriaIndumentaria : Migration
