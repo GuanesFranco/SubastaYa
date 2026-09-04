@@ -13,6 +13,11 @@ using SubastaYa.Infrastructure.Auth;
 using SubastaYa.Infrastructure.Data;
 using SubastaYa.Infrastructure.Persistence;
 using SubastaYa.Infrastructure.Persistence.Repositories;
+using SubastaYa.Domain.Interfaces;
+using SubastaYa.Infrastructure.Data.Repositories;
+using SubastaYa.Application.UseCases.Categories.Queries;
+using SubastaYa.Application.UseCases.Auctions.Commands;
+using SubastaYa.Application.UseCases.Auctions.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +70,15 @@ builder.Services.AddScoped<LoginQueryHandler>();
 builder.Services.AddScoped<GetWalletBalanceQueryHandler>();
 builder.Services.AddScoped<DepositCommandHandler>();
 builder.Services.AddScoped<GetWalletTransactionsQueryHandler>();
+
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<ISubastaRepository, SubastaRepository>();
+builder.Services.AddScoped<ListarCategoriasQueryHandler>();
+builder.Services.AddScoped<CrearSubastaCommandHandler>();
+builder.Services.AddScoped<ListarSubastasQueryHandler>();
+builder.Services.AddScoped<ObtenerSubastaQueryHandler>();
+builder.Services.AddScoped<ListarPujasQueryHandler>();
+builder.Services.AddScoped<ListarMisSubastasQueryHandler>();
 
 // Configuración JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
