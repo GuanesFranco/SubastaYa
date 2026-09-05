@@ -1,3 +1,4 @@
+using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Wallet;
 using SubastaYa.Application.Interfaces;
 using SubastaYa.Domain.Entities;
@@ -31,7 +32,7 @@ public class DepositCommandHandler
             BilleteraId = billetera.Id,
             Tipo = TipoTransaccionLedger.Deposito,
             Monto = command.Monto,
-            Fecha = DateTime.UtcNow,
+            Fecha = FechaArgentina.AhoraUtc,
             Descripcion = "Carga de saldo simulada"
         };
 

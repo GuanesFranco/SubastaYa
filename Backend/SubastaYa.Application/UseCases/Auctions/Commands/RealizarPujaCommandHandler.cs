@@ -1,3 +1,4 @@
+using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.Interfaces;
 using SubastaYa.Domain.Entities;
@@ -33,7 +34,7 @@ public class RealizarPujaCommandHandler
         var subasta = await _subastaRepository.ObtenerParaPujarAsync(command.SubastaId)
             ?? throw new KeyNotFoundException("La subasta no existe.");
 
-        var ahora = DateTime.UtcNow;
+        var ahora = FechaArgentina.AhoraUtc;
 
         if (subasta.Estado == EstadoSubasta.Finalizada || subasta.Estado == EstadoSubasta.Desierta
             || ahora < subasta.FechaInicio || ahora > subasta.FechaFin)
@@ -113,7 +114,7 @@ public class RealizarPujaCommandHandler
                 EntidadId = subasta.Id,
                 Accion = AccionesAuditoria.ExtensionTiempo,
                 UsuarioId = command.CompradorId,
-                DetalleJson = $"{{\"nuevaFechaFin\":\"{subasta.FechaFin:o}\"}}",
+                DetalleJson = $"{{\"nuevaFechaFin\":\"{FechaArgentina.ALocal(subasta.FechaFin):o}\"}}",
                 Fecha = ahora
             });
         }
@@ -128,7 +129,7 @@ public class RealizarPujaCommandHandler
             throw;
         }
 
-        return new PujaResultadoDto(puja.Id, puja.Monto, subasta.FechaFin, tiempoExtendido);
+        return new PujaResultadoDto(puja.Id, puja.Monto, FechaArgentina.ALocal(subasta.FechaFin), tiempoExtendido);
     }
 
     private async Task RegistrarRechazoAsync(int subastaId, int compradorId, AccionesAuditoria accion)
@@ -142,7 +143,7 @@ public class RealizarPujaCommandHandler
             Accion = accion,
             UsuarioId = compradorId,
             DetalleJson = string.Empty,
-            Fecha = DateTime.UtcNow
+            Fecha = FechaArgentina.AhoraUtc
         });
 
         await _unitOfWork.SaveChangesAsync();
