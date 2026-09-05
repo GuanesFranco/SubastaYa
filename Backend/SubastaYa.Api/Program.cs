@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SubastaYa.Api.Hubs;
 using SubastaYa.Api.Middleware;
+using SubastaYa.Api.Notifications;
 using SubastaYa.Application.Interfaces;
 using SubastaYa.Application.UseCases.Users.Commands;
 using SubastaYa.Application.UseCases.Users.Queries;
@@ -24,6 +26,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSignalR();
 
 builder.Services.AddProblemDetails();
 
@@ -62,6 +66,7 @@ builder.Services.AddScoped<IBilleteraRepository, BilleteraRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddSingleton<IJwtProvider, JwtProvider>();
+builder.Services.AddSingleton<INotificadorSubastas, NotificadorSubastasSignalR>();
 
 builder.Services.AddScoped<RegistrarUsuarioCommandHandler>();
 builder.Services.AddScoped<LoginQueryHandler>();
@@ -166,6 +171,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<AuctionHub>("/hubs/auctions");
 
 app.Run();
 

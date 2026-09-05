@@ -1,5 +1,6 @@
 using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
+using SubastaYa.Application.DTOs.Notifications;
 using SubastaYa.Application.Interfaces;
 using SubastaYa.Domain.Entities;
 using SubastaYa.Domain.Enums;
@@ -15,17 +16,20 @@ public class RealizarPujaCommandHandler
     private readonly ISubastaRepository _subastaRepository;
     private readonly IBilleteraRepository _billeteraRepository;
     private readonly IAuditoriaLogRepository _auditoriaLogRepository;
+    private readonly INotificadorSubastas _notificador;
     private readonly IUnitOfWork _unitOfWork;
 
     public RealizarPujaCommandHandler(
         ISubastaRepository subastaRepository,
         IBilleteraRepository billeteraRepository,
         IAuditoriaLogRepository auditoriaLogRepository,
+        INotificadorSubastas notificador,
         IUnitOfWork unitOfWork)
     {
         _subastaRepository = subastaRepository;
         _billeteraRepository = billeteraRepository;
         _auditoriaLogRepository = auditoriaLogRepository;
+        _notificador = notificador;
         _unitOfWork = unitOfWork;
     }
 
@@ -129,7 +133,21 @@ public class RealizarPujaCommandHandler
             throw;
         }
 
-        return new PujaResultadoDto(puja.Id, puja.Monto, FechaArgentina.ALocal(subasta.FechaFin), tiempoExtendido);
+        var fechaFinLocal = FechaArgentina.ALocal(subasta.FechaFin);
+
+        await _notificador.PujaRealizadaAsync(new PujaRealizadaDto(
+            subasta.Id,
+            puja.Id,
+            puja.Monto,
+            FechaArgentina.ALocal(puja.FechaPuja),
+            fechaFinLocal));
+
+        if (tiempoExtendido)
+        {
+            await _notificador.TiempoExtendidoAsync(new TiempoExtendidoDto(subasta.Id, fechaFinLocal));
+        }
+
+        return new PujaResultadoDto(puja.Id, puja.Monto, fechaFinLocal, tiempoExtendido);
     }
 
     private async Task RegistrarRechazoAsync(int subastaId, int compradorId, AccionesAuditoria accion)
