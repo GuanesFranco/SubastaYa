@@ -23,7 +23,7 @@ public class SubastaYaDbContext : DbContext
     {
         modelBuilder.Entity<Usuario>(entity =>
         {
-            entity.Property(u => u.Email).IsRequired();
+            entity.Property(u => u.Email).IsRequired().HasMaxLength(256);
             entity.HasIndex(u => u.Email).IsUnique();
 
             entity.HasOne(u => u.Billetera)
@@ -35,6 +35,8 @@ public class SubastaYaDbContext : DbContext
         modelBuilder.Entity<Billetera>(entity =>
         {
             entity.Property(b => b.Version).IsConcurrencyToken();
+            entity.Property(b => b.SaldoTotal).HasPrecision(18, 2);
+            entity.Property(b => b.SaldoRetenido).HasPrecision(18, 2);
 
             entity.HasMany(b => b.Movimientos)
                 .WithOne(t => t.Billetera)
@@ -47,6 +49,10 @@ public class SubastaYaDbContext : DbContext
             entity.Property(s => s.Estado).HasConversion<string>();
 
             entity.Property(s => s.Version).IsConcurrencyToken();
+            entity.Property(s => s.PrecioBase).HasPrecision(18, 2);
+            entity.Property(s => s.IncrementoMinimo).HasPrecision(18, 2);
+            entity.Property(s => s.PrecioActual).HasPrecision(18, 2);
+            entity.Property(s => s.MontoFinal).HasPrecision(18, 2);
 
             entity.HasOne(s => s.Vendedor)
                 .WithMany(u => u.SubastasPublicadas)
@@ -76,6 +82,8 @@ public class SubastaYaDbContext : DbContext
 
         modelBuilder.Entity<Puja>(entity =>
         {
+            entity.Property(p => p.Monto).HasPrecision(18, 2);
+
             entity.HasOne(p => p.Comprador)
                 .WithMany(u => u.Pujas)
                 .HasForeignKey(p => p.CompradorId)
@@ -85,6 +93,7 @@ public class SubastaYaDbContext : DbContext
         modelBuilder.Entity<TransaccionLedger>(entity =>
         {
             entity.Property(t => t.Tipo).HasConversion<string>();
+            entity.Property(t => t.Monto).HasPrecision(18, 2);
 
             entity.HasOne(t => t.Subasta)
                 .WithMany()
@@ -102,7 +111,7 @@ public class SubastaYaDbContext : DbContext
             entity.Property(e => e.Accion)
                   .HasConversion<string>();
 
-            entity.Property(a => a.DetalleJson).HasColumnType("jsonb");
+            entity.Property(a => a.DetalleJson).HasColumnType("nvarchar(max)");
 
             entity.HasOne(e => e.Usuario)
                   .WithMany()
