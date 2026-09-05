@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace SubastaYa.Infrastructure.Persistence.Migrations
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
+namespace SubastaYa.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -16,10 +17,10 @@ namespace SubastaYa.Infrastructure.Persistence.Migrations
                 name: "Categorias",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Nombre = table.Column<string>(type: "text", nullable: false),
-                    UrlIcono = table.Column<string>(type: "text", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nombre = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UrlIcono = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -30,12 +31,12 @@ namespace SubastaYa.Infrastructure.Persistence.Migrations
                 name: "Usuarios",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    Nombre = table.Column<string>(type: "text", nullable: false),
-                    PasswordHash = table.Column<string>(type: "text", nullable: false),
-                    FechaRegistro = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Nombre = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FechaRegistro = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -46,14 +47,14 @@ namespace SubastaYa.Infrastructure.Persistence.Migrations
                 name: "AuditoriaLogs",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Entidad = table.Column<string>(type: "text", nullable: false),
-                    EntidadId = table.Column<int>(type: "integer", nullable: false),
-                    Accion = table.Column<string>(type: "text", nullable: false),
-                    UsuarioId = table.Column<int>(type: "integer", nullable: true),
-                    DetalleJson = table.Column<string>(type: "jsonb", nullable: false),
-                    Fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Entidad = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    EntidadId = table.Column<int>(type: "int", nullable: false),
+                    Accion = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UsuarioId = table.Column<int>(type: "int", nullable: true),
+                    DetalleJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Fecha = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -70,12 +71,12 @@ namespace SubastaYa.Infrastructure.Persistence.Migrations
                 name: "Billeteras",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UsuarioId = table.Column<int>(type: "integer", nullable: false),
-                    SaldoTotal = table.Column<decimal>(type: "numeric", nullable: false),
-                    SaldoRetenido = table.Column<decimal>(type: "numeric", nullable: false),
-                    Version = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UsuarioId = table.Column<int>(type: "int", nullable: false),
+                    SaldoTotal = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    SaldoRetenido = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    Version = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -85,19 +86,19 @@ namespace SubastaYa.Infrastructure.Persistence.Migrations
                         column: x => x.UsuarioId,
                         principalTable: "Usuarios",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Pujas",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    SubastaId = table.Column<int>(type: "integer", nullable: false),
-                    CompradorId = table.Column<int>(type: "integer", nullable: false),
-                    Monto = table.Column<decimal>(type: "numeric", nullable: false),
-                    FechaPuja = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SubastaId = table.Column<int>(type: "int", nullable: false),
+                    CompradorId = table.Column<int>(type: "int", nullable: false),
+                    Monto = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    FechaPuja = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -114,23 +115,23 @@ namespace SubastaYa.Infrastructure.Persistence.Migrations
                 name: "Subastas",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    VendedorId = table.Column<int>(type: "integer", nullable: false),
-                    CategoriaId = table.Column<int>(type: "integer", nullable: false),
-                    Titulo = table.Column<string>(type: "text", nullable: false),
-                    Descripcion = table.Column<string>(type: "text", nullable: false),
-                    UrlImagen = table.Column<string>(type: "text", nullable: false),
-                    PrecioBase = table.Column<decimal>(type: "numeric", nullable: false),
-                    IncrementoMinimo = table.Column<decimal>(type: "numeric", nullable: false),
-                    PrecioActual = table.Column<decimal>(type: "numeric", nullable: false),
-                    PujaLiderId = table.Column<int>(type: "integer", nullable: true),
-                    FechaInicio = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    FechaFin = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Estado = table.Column<string>(type: "text", nullable: false),
-                    GanadorUsuarioId = table.Column<int>(type: "integer", nullable: true),
-                    MontoFinal = table.Column<decimal>(type: "numeric", nullable: true),
-                    Version = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    VendedorId = table.Column<int>(type: "int", nullable: false),
+                    CategoriaId = table.Column<int>(type: "int", nullable: false),
+                    Titulo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UrlImagen = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PrecioBase = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    IncrementoMinimo = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    PrecioActual = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    PujaLiderId = table.Column<int>(type: "int", nullable: true),
+                    FechaInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FechaFin = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Estado = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    GanadorUsuarioId = table.Column<int>(type: "int", nullable: true),
+                    MontoFinal = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
+                    Version = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -165,14 +166,14 @@ namespace SubastaYa.Infrastructure.Persistence.Migrations
                 name: "TransaccionesLedger",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    BilleteraId = table.Column<int>(type: "integer", nullable: false),
-                    Tipo = table.Column<string>(type: "text", nullable: false),
-                    Monto = table.Column<decimal>(type: "numeric", nullable: false),
-                    Fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Descripcion = table.Column<string>(type: "text", nullable: false),
-                    SubastaId = table.Column<int>(type: "integer", nullable: true)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BilleteraId = table.Column<int>(type: "int", nullable: false),
+                    Tipo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Monto = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    Fecha = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SubastaId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -189,6 +190,17 @@ namespace SubastaYa.Infrastructure.Persistence.Migrations
                         principalTable: "Subastas",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.InsertData(
+                table: "Categorias",
+                columns: new[] { "Id", "Nombre", "UrlIcono" },
+                values: new object[,]
+                {
+                    { 1, "Tecnología", "https://example.com/icon-tech.png" },
+                    { 2, "Vehículos", "https://example.com/icon-car.png" },
+                    { 3, "Coleccionables", "https://example.com/icon-collect.png" },
+                    { 4, "Indumentaria", "https://example.com/icon-clothes.png" }
                 });
 
             migrationBuilder.CreateIndex(
