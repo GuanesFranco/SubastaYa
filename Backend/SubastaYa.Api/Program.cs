@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SubastaYa.Api.Middleware;
@@ -18,13 +20,13 @@ using SubastaYa.Application.UseCases.Auctions.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger config para aceptar JWT
+builder.Services.AddProblemDetails();
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -55,7 +57,6 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<SubastaYaDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configuración DI
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IBilleteraRepository, BilleteraRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -80,7 +81,6 @@ builder.Services.AddScoped<ListarMisSubastasQueryHandler>();
 builder.Services.AddScoped<RealizarPujaCommandHandler>();
 builder.Services.AddScoped<ListarMisPujasQueryHandler>();
 
-// Configuración JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -94,6 +94,56 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async contexto =>
+            {
+                contexto.HandleResponse();
+
+                if (contexto.Response.HasStarted)
+                {
+                    return;
+                }
+
+                var problema = new ProblemDetails
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "No autenticado",
+                    Detail = "Falta el token de acceso o ya no es válido.",
+                    Instance = contexto.Request.Path
+                };
+
+                problema.Extensions["traceId"] = Activity.Current?.Id ?? contexto.HttpContext.TraceIdentifier;
+
+                contexto.Response.ContentType = "application/problem+json";
+                contexto.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+                await contexto.Response.WriteAsJsonAsync(problema);
+            },
+            OnForbidden = async contexto =>
+            {
+                if (contexto.Response.HasStarted)
+                {
+                    return;
+                }
+
+                var problema = new ProblemDetails
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Title = "Acceso denegado",
+                    Detail = "El token es válido pero no habilita esta operación.",
+                    Instance = contexto.Request.Path
+                };
+
+                problema.Extensions["traceId"] = Activity.Current?.Id ?? contexto.HttpContext.TraceIdentifier;
+
+                contexto.Response.ContentType = "application/problem+json";
+                contexto.Response.StatusCode = StatusCodes.Status403Forbidden;
+
+                await contexto.Response.WriteAsJsonAsync(problema);
+            }
+        };
     });
 
 var app = builder.Build();
@@ -104,7 +154,6 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 }
 
-// Configure the HTTP request pipeline.
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())

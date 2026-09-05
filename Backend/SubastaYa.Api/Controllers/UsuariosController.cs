@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Api.Extensions;
+using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Auth;
 using SubastaYa.Application.UseCases.Auctions.Queries;
 using SubastaYa.Application.UseCases.Users.Commands;
@@ -9,6 +10,7 @@ namespace SubastaYa.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/users")]
+[Produces("application/json")]
 public class UsuariosController : ControllerBase
 {
     private readonly RegistrarUsuarioCommandHandler _handler;
@@ -26,6 +28,8 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegistrarUsuarioDto dto)
     {
         var command = new RegistrarUsuarioCommand(dto);
@@ -35,6 +39,8 @@ public class UsuariosController : ControllerBase
 
     [HttpGet("me/auctions")]
     [Authorize]
+    [ProducesResponseType(typeof(IEnumerable<SubastaResumenDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMisSubastas()
     {
         var query = new ListarMisSubastasQuery(User.ObtenerUsuarioId());
@@ -44,6 +50,8 @@ public class UsuariosController : ControllerBase
 
     [HttpGet("me/bids")]
     [Authorize]
+    [ProducesResponseType(typeof(IEnumerable<MisPujasDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMisPujas()
     {
         var query = new ListarMisPujasQuery(User.ObtenerUsuarioId());
