@@ -1,10 +1,9 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SubastaYa.Api.Extensions;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.UseCases.Auctions.Commands;
 using SubastaYa.Application.UseCases.Auctions.Queries;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace SubastaYa.Api.Controllers;
 
@@ -32,26 +31,11 @@ public class SubastasController : ControllerBase
         _realizarPujaHandler = realizarPujaHandler;
     }
 
-    private int? UsuarioIdActual
-    {
-        get
-        {
-            var claim = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.TryParse(claim, out var id) ? id : null;
-        }
-    }
-
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> CrearSubasta([FromBody] CrearSubastaDto dto)
     {
-        var vendedorId = UsuarioIdActual;
-        if (vendedorId == null)
-        {
-            return Unauthorized(new { error = "Token inválido o ID de usuario no encontrado en el token." });
-        }
-
-        var command = new CrearSubastaCommand(vendedorId.Value, dto);
+        var command = new CrearSubastaCommand(User.ObtenerUsuarioId(), dto);
         var subastaId = await _crearSubastaHandler.Handle(command);
 
         return CreatedAtAction(nameof(CrearSubasta), new { id = subastaId }, new { id = subastaId });
@@ -77,13 +61,7 @@ public class SubastasController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Pujar(int id, [FromBody] PujaRequestDto dto)
     {
-        var compradorId = UsuarioIdActual;
-        if (compradorId == null)
-        {
-            return Unauthorized(new { error = "Token inválido o ID de usuario no encontrado en el token." });
-        }
-
-        var command = new RealizarPujaCommand(id, compradorId.Value, dto.Monto);
+        var command = new RealizarPujaCommand(id, User.ObtenerUsuarioId(), dto.Monto);
         var result = await _realizarPujaHandler.Handle(command);
 
         return StatusCode(StatusCodes.Status201Created, result);

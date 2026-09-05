@@ -1,5 +1,6 @@
-using SubastaYa.Domain.Entities;
 using SubastaYa.Application.Interfaces;
+using SubastaYa.Domain.Entities;
+using SubastaYa.Domain.Exceptions;
 
 namespace SubastaYa.Application.UseCases.Auctions.Commands;
 
@@ -18,15 +19,35 @@ public class CrearSubastaCommandHandler
     {
         var dto = command.Dto;
 
+        if (string.IsNullOrWhiteSpace(dto.Titulo))
+        {
+            throw new DomainException("El título es obligatorio.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Descripcion))
+        {
+            throw new DomainException("La descripción es obligatoria.");
+        }
+
+        if (dto.PrecioBase <= 0)
+        {
+            throw new DomainException("El precio base debe ser mayor a 0.");
+        }
+
+        if (dto.IncrementoMinimo <= 0)
+        {
+            throw new DomainException("El incremento mínimo debe ser mayor a 0.");
+        }
+
         if (dto.FechaInicio >= dto.FechaFin)
         {
-            throw new SubastaYa.Domain.Exceptions.DomainException("La fecha de inicio debe ser anterior a la fecha de fin.");
+            throw new DomainException("La fecha de inicio debe ser anterior a la fecha de fin.");
         }
 
         bool categoriaExiste = await _subastaRepository.ExisteCategoriaAsync(dto.CategoriaId);
         if (!categoriaExiste)
         {
-            throw new SubastaYa.Domain.Exceptions.DomainException("La categoría especificada no existe.");
+            throw new DomainException("La categoría especificada no existe.");
         }
 
         var subasta = new Subasta(
