@@ -10,6 +10,8 @@ namespace SubastaYa.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/wallets")]
+[Produces("application/json")]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 public class WalletsController : ControllerBase
 {
     private readonly GetWalletBalanceQueryHandler _balanceHandler;
@@ -27,6 +29,8 @@ public class WalletsController : ControllerBase
     }
 
     [HttpGet("me")]
+    [ProducesResponseType(typeof(WalletBalanceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ObtenerBalance()
     {
         var result = await _balanceHandler.Handle(new GetWalletBalanceQuery(User.ObtenerUsuarioId()));
@@ -34,6 +38,9 @@ public class WalletsController : ControllerBase
     }
 
     [HttpPost("me/deposits")]
+    [ProducesResponseType(typeof(WalletBalanceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Depositar([FromBody] DepositoDto dto)
     {
         var result = await _depositHandler.Handle(new DepositCommand(User.ObtenerUsuarioId(), dto.Monto));
@@ -41,6 +48,7 @@ public class WalletsController : ControllerBase
     }
 
     [HttpGet("me/transactions")]
+    [ProducesResponseType(typeof(IEnumerable<MovimientoDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ObtenerMovimientos()
     {
         var result = await _transactionsHandler.Handle(new GetWalletTransactionsQuery(User.ObtenerUsuarioId()));

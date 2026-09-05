@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Api.Extensions;
 using SubastaYa.Application.DTOs.Auctions;
+using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.UseCases.Auctions.Commands;
 using SubastaYa.Application.UseCases.Auctions.Queries;
 
@@ -9,6 +10,7 @@ namespace SubastaYa.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/auctions")]
+[Produces("application/json")]
 public class SubastasController : ControllerBase
 {
     private readonly CrearSubastaCommandHandler _crearSubastaHandler;
@@ -33,15 +35,19 @@ public class SubastasController : ControllerBase
 
     [HttpPost]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CrearSubasta([FromBody] CrearSubastaDto dto)
     {
         var command = new CrearSubastaCommand(User.ObtenerUsuarioId(), dto);
         var subastaId = await _crearSubastaHandler.Handle(command);
 
-        return CreatedAtAction(nameof(CrearSubasta), new { id = subastaId }, new { id = subastaId });
+        return CreatedAtAction(nameof(GetSubasta), new { id = subastaId }, new { id = subastaId });
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(PaginatedResult<SubastaResumenDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSubastas([FromQuery] ListarSubastasFiltroDto filtro)
     {
         var query = new ListarSubastasQuery(filtro);
@@ -50,6 +56,7 @@ public class SubastasController : ControllerBase
     }
 
     [HttpGet("{id}/bids")]
+    [ProducesResponseType(typeof(IEnumerable<PujaDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPujas(int id)
     {
         var query = new ListarPujasQuery(id);
@@ -59,6 +66,12 @@ public class SubastasController : ControllerBase
 
     [HttpPost("{id}/bids")]
     [Authorize]
+    [ProducesResponseType(typeof(PujaResultadoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Pujar(int id, [FromBody] PujaRequestDto dto)
     {
         var command = new RealizarPujaCommand(id, User.ObtenerUsuarioId(), dto.Monto);
@@ -68,6 +81,8 @@ public class SubastasController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(SubastaDetalleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSubasta(int id)
     {
         var query = new ObtenerSubastaQuery(id);

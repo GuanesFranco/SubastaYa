@@ -6,6 +6,7 @@ namespace SubastaYa.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/sessions")]
+[Produces("application/json")]
 public class SessionsController : ControllerBase
 {
     private readonly LoginQueryHandler _handler;
@@ -16,6 +17,9 @@ public class SessionsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var query = new LoginQuery(dto);
