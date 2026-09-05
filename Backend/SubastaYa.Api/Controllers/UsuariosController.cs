@@ -1,10 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using SubastaYa.Application.DTOs.Auth;
-using SubastaYa.Application.UseCases.Users.Commands;
-using SubastaYa.Application.UseCases.Auctions.Queries;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Mvc;
+using SubastaYa.Api.Extensions;
+using SubastaYa.Application.DTOs.Auth;
+using SubastaYa.Application.UseCases.Auctions.Queries;
+using SubastaYa.Application.UseCases.Users.Commands;
 
 namespace SubastaYa.Api.Controllers;
 
@@ -38,14 +37,7 @@ public class UsuariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetMisSubastas()
     {
-        var userIdClaim = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int vendedorId))
-        {
-            return Unauthorized(new { error = "Token inválido o ID de usuario no encontrado en el token." });
-        }
-
-        var query = new ListarMisSubastasQuery(vendedorId);
+        var query = new ListarMisSubastasQuery(User.ObtenerUsuarioId());
         var result = await _listarMisSubastasHandler.Handle(query);
         return Ok(result);
     }
@@ -54,14 +46,7 @@ public class UsuariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetMisPujas()
     {
-        var userIdClaim = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int compradorId))
-        {
-            return Unauthorized(new { error = "Token inválido o ID de usuario no encontrado en el token." });
-        }
-
-        var query = new ListarMisPujasQuery(compradorId);
+        var query = new ListarMisPujasQuery(User.ObtenerUsuarioId());
         var result = await _listarMisPujasHandler.Handle(query);
         return Ok(result);
     }
