@@ -1,3 +1,4 @@
+using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.Interfaces;
 using SubastaYa.Domain.Entities;
 using SubastaYa.Domain.Exceptions;
@@ -39,9 +40,17 @@ public class CrearSubastaCommandHandler
             throw new DomainException("El incremento mínimo debe ser mayor a 0.");
         }
 
-        if (dto.FechaInicio >= dto.FechaFin)
+        var fechaInicio = FechaArgentina.AUtc(dto.FechaInicio);
+        var fechaFin = FechaArgentina.AUtc(dto.FechaFin);
+
+        if (fechaInicio >= fechaFin)
         {
             throw new DomainException("La fecha de inicio debe ser anterior a la fecha de fin.");
+        }
+
+        if (fechaFin <= FechaArgentina.AhoraUtc)
+        {
+            throw new DomainException("La fecha de fin debe ser futura.");
         }
 
         bool categoriaExiste = await _subastaRepository.ExisteCategoriaAsync(dto.CategoriaId);
@@ -58,8 +67,8 @@ public class CrearSubastaCommandHandler
             urlImagen: dto.UrlImagen ?? string.Empty,
             precioBase: dto.PrecioBase,
             incrementoMinimo: dto.IncrementoMinimo,
-            fechaInicio: dto.FechaInicio,
-            fechaFin: dto.FechaFin
+            fechaInicio: fechaInicio,
+            fechaFin: fechaFin
         );
 
         await _subastaRepository.AgregarAsync(subasta);

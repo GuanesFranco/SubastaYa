@@ -1,3 +1,4 @@
+using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auth;
 using SubastaYa.Application.Interfaces;
 using SubastaYa.Domain.Entities;
@@ -38,7 +39,7 @@ public class RegistrarUsuarioCommandHandler
             Email = command.Dto.Email,
             Nombre = command.Dto.Nombre,
             PasswordHash = hash,
-            FechaRegistro = DateTime.UtcNow
+            FechaRegistro = FechaArgentina.AhoraUtc
         };
 
         var billetera = new Billetera(0); // EF Core asignará UsuarioId luego de guardar o usando nav properties.

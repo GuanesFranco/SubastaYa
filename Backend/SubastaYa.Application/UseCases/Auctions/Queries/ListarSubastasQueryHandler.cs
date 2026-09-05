@@ -1,3 +1,4 @@
+using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.Interfaces;
@@ -24,7 +25,7 @@ public class ListarSubastasQueryHandler
             s.Titulo,
             s.UrlImagen,
             s.PrecioActual,
-            s.FechaFin,
+            FechaArgentina.ALocal(s.FechaFin),
             s.Estado,
             s.Categoria.Nombre,
             s.Pujas.Count

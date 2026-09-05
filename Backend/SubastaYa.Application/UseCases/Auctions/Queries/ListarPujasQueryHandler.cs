@@ -1,3 +1,4 @@
+using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.Interfaces;
 
@@ -19,7 +20,7 @@ public class ListarPujasQueryHandler
         return pujas.Select(p => new PujaDto(
             p.Id,
             p.Monto,
-            p.FechaPuja,
+            FechaArgentina.ALocal(p.FechaPuja),
             p.Comprador.Nombre.Substring(0, Math.Min(2, p.Comprador.Nombre.Length)) + "***"
         ));
     }
