@@ -2,11 +2,9 @@ namespace SubastaYa.Application.Common.Time;
 
 public static class FechaArgentina
 {
-    public static readonly TimeSpan Offset = TimeSpan.FromHours(-3);
+    private static readonly TimeSpan Offset = TimeSpan.FromHours(-3);
 
     public static DateTime AhoraUtc => DateTime.UtcNow;
-
-    public static DateTime Ahora => ALocal(DateTime.UtcNow);
 
     public static DateTime AUtc(DateTime fecha)
     {
@@ -18,12 +16,13 @@ public static class FechaArgentina
         };
     }
 
-    public static DateTime ALocal(DateTime fechaUtc)
+    public static DateTime ComoUtc(DateTime fecha)
     {
-        var utc = fechaUtc.Kind == DateTimeKind.Utc
-            ? fechaUtc
-            : DateTime.SpecifyKind(fechaUtc, DateTimeKind.Utc);
-
-        return DateTime.SpecifyKind(utc + Offset, DateTimeKind.Unspecified);
+        return fecha.Kind switch
+        {
+            DateTimeKind.Utc => fecha,
+            DateTimeKind.Local => fecha.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(fecha, DateTimeKind.Utc)
+        };
     }
 }
