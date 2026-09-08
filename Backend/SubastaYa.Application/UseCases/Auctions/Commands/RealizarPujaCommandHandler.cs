@@ -118,7 +118,7 @@ public class RealizarPujaCommandHandler
                 EntidadId = subasta.Id,
                 Accion = AccionesAuditoria.ExtensionTiempo,
                 UsuarioId = command.CompradorId,
-                DetalleJson = $"{{\"nuevaFechaFin\":\"{FechaArgentina.ALocal(subasta.FechaFin):o}\"}}",
+                DetalleJson = $"{{\"nuevaFechaFin\":\"{FechaArgentina.ComoUtc(subasta.FechaFin):o}\"}}",
                 Fecha = ahora
             });
         }
@@ -133,21 +133,21 @@ public class RealizarPujaCommandHandler
             throw;
         }
 
-        var fechaFinLocal = FechaArgentina.ALocal(subasta.FechaFin);
+        var fechaFinUtc = FechaArgentina.ComoUtc(subasta.FechaFin);
 
         await _notificador.PujaRealizadaAsync(new PujaRealizadaDto(
             subasta.Id,
             puja.Id,
             puja.Monto,
-            FechaArgentina.ALocal(puja.FechaPuja),
-            fechaFinLocal));
+            FechaArgentina.ComoUtc(puja.FechaPuja),
+            fechaFinUtc));
 
         if (tiempoExtendido)
         {
-            await _notificador.TiempoExtendidoAsync(new TiempoExtendidoDto(subasta.Id, fechaFinLocal));
+            await _notificador.TiempoExtendidoAsync(new TiempoExtendidoDto(subasta.Id, fechaFinUtc));
         }
 
-        return new PujaResultadoDto(puja.Id, puja.Monto, fechaFinLocal, tiempoExtendido);
+        return new PujaResultadoDto(puja.Id, puja.Monto, fechaFinUtc, tiempoExtendido);
     }
 
     private async Task RegistrarRechazoAsync(int subastaId, int compradorId, AccionesAuditoria accion)

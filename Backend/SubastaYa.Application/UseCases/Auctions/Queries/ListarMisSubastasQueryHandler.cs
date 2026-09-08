@@ -22,7 +22,7 @@ public class ListarMisSubastasQueryHandler
             s.Titulo,
             s.UrlImagen,
             s.PrecioActual,
-            FechaArgentina.ALocal(s.FechaFin),
+            FechaArgentina.ComoUtc(s.FechaFin),
             s.Estado,
             s.Categoria.Nombre,
             s.Pujas.Count

@@ -20,7 +20,7 @@ public class ListarPujasQueryHandler
         return pujas.Select(p => new PujaDto(
             p.Id,
             p.Monto,
-            FechaArgentina.ALocal(p.FechaPuja),
+            FechaArgentina.ComoUtc(p.FechaPuja),
             p.Comprador.Nombre.Substring(0, Math.Min(2, p.Comprador.Nombre.Length)) + "***"
         ));
     }

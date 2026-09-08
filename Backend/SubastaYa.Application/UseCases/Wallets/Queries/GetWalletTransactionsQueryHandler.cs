@@ -18,7 +18,7 @@ public class GetWalletTransactionsQueryHandler
         var movimientos = await _billeteraRepository.ObtenerMovimientosPorUsuarioIdAsync(query.UsuarioId);
 
         return movimientos
-            .Select(m => new MovimientoDto(m.Id, m.Tipo, m.Monto, FechaArgentina.ALocal(m.Fecha), m.Descripcion, m.SubastaId))
+            .Select(m => new MovimientoDto(m.Id, m.Tipo, m.Monto, FechaArgentina.ComoUtc(m.Fecha), m.Descripcion, m.SubastaId))
             .ToList();
     }
 }
