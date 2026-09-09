@@ -2,8 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Api.Extensions;
 using SubastaYa.Application.DTOs.Wallet;
-using SubastaYa.Application.UseCases.Wallets.Commands;
-using SubastaYa.Application.UseCases.Wallets.Queries;
+using SubastaYa.Application.UseCases.Wallets.Deposit;
+using SubastaYa.Application.UseCases.Wallets.GetWalletBalance;
+using SubastaYa.Application.UseCases.Wallets.GetWalletTransactions;
 
 namespace SubastaYa.Api.Controllers;
 
@@ -55,3 +56,4 @@ public class WalletsController : ControllerBase
         return Ok(result);
     }
 }
+

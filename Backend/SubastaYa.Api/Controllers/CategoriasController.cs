@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Application.DTOs.Categories;
-using SubastaYa.Application.UseCases.Categories.Queries;
+using SubastaYa.Application.UseCases.Categories.ListarCategorias;
 
 namespace SubastaYa.Api.Controllers;
 
@@ -25,3 +25,4 @@ public class CategoriasController : ControllerBase
         return Ok(result);
     }
 }
+

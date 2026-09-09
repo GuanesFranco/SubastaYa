@@ -8,17 +8,24 @@ using Microsoft.IdentityModel.Tokens;
 using SubastaYa.Api.Hubs;
 using SubastaYa.Api.Middleware;
 using SubastaYa.Api.Notifications;
-using SubastaYa.Application.Interfaces;
-using SubastaYa.Application.UseCases.Users.Commands;
-using SubastaYa.Application.UseCases.Users.Queries;
-using SubastaYa.Application.UseCases.Wallets.Commands;
-using SubastaYa.Application.UseCases.Wallets.Queries;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
+using SubastaYa.Application.UseCases.Users.RegistrarUsuario;
+using SubastaYa.Application.UseCases.Users.Login;
+using SubastaYa.Application.UseCases.Users.ListarMisPujas;
+using SubastaYa.Application.UseCases.Wallets.Deposit;
+using SubastaYa.Application.UseCases.Wallets.GetWalletBalance;
+using SubastaYa.Application.UseCases.Wallets.GetWalletTransactions;
 using SubastaYa.Infrastructure.Auth;
 using SubastaYa.Infrastructure.Persistence;
 using SubastaYa.Infrastructure.Persistence.Repositories;
-using SubastaYa.Application.UseCases.Categories.Queries;
-using SubastaYa.Application.UseCases.Auctions.Commands;
-using SubastaYa.Application.UseCases.Auctions.Queries;
+using SubastaYa.Application.UseCases.Categories.ListarCategorias;
+using SubastaYa.Application.UseCases.Auctions.CrearSubasta;
+using SubastaYa.Application.UseCases.Auctions.RealizarPuja;
+using SubastaYa.Application.UseCases.Auctions.ListarSubastas;
+using SubastaYa.Application.UseCases.Auctions.ObtenerSubasta;
+using SubastaYa.Application.UseCases.Auctions.ListarPujas;
+using SubastaYa.Application.UseCases.Auctions.ListarMisSubastas;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -174,4 +181,6 @@ app.MapControllers();
 app.MapHub<AuctionHub>("/hubs/auctions");
 
 app.Run();
+
+
 

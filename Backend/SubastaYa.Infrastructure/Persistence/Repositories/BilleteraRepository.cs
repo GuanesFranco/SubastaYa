@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using SubastaYa.Application.Interfaces;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
 using SubastaYa.Domain.Entities;
 using SubastaYa.Infrastructure.Persistence;
 
@@ -33,3 +34,4 @@ public class BilleteraRepository : IBilleteraRepository
             .ToListAsync();
     }
 }
+

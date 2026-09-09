@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SubastaYa.Domain.Entities;
-using SubastaYa.Application.Interfaces;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
 
 namespace SubastaYa.Infrastructure.Persistence.Repositories;
 
@@ -20,3 +21,4 @@ public class CategoriaRepository : ICategoriaRepository
             .ToListAsync();
     }
 }
+

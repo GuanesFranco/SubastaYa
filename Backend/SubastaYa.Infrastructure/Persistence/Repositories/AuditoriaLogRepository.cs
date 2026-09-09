@@ -1,4 +1,5 @@
-using SubastaYa.Application.Interfaces;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
 using SubastaYa.Domain.Entities;
 
 namespace SubastaYa.Infrastructure.Persistence.Repositories;
@@ -17,3 +18,4 @@ public class AuditoriaLogRepository : IAuditoriaLogRepository
         await _context.AuditoriaLogs.AddAsync(log);
     }
 }
+

@@ -3,8 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Api.Extensions;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Common;
-using SubastaYa.Application.UseCases.Auctions.Commands;
-using SubastaYa.Application.UseCases.Auctions.Queries;
+using SubastaYa.Application.UseCases.Auctions.CrearSubasta;
+using SubastaYa.Application.UseCases.Auctions.RealizarPuja;
+using SubastaYa.Application.UseCases.Auctions.ListarSubastas;
+using SubastaYa.Application.UseCases.Auctions.ObtenerSubasta;
+using SubastaYa.Application.UseCases.Auctions.ListarPujas;
+using SubastaYa.Application.UseCases.Auctions.ListarMisSubastas;
 
 namespace SubastaYa.Api.Controllers;
 
@@ -90,3 +94,4 @@ public class SubastasController : ControllerBase
         return Ok(result);
     }
 }
+

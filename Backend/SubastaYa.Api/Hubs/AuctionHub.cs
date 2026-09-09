@@ -16,3 +16,4 @@ public class AuctionHub : Hub
         return Groups.RemoveFromGroupAsync(Context.ConnectionId, NombreGrupo(subastaId));
     }
 }
+

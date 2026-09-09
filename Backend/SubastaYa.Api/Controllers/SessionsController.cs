@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Application.DTOs.Auth;
-using SubastaYa.Application.UseCases.Users.Queries;
+using SubastaYa.Application.UseCases.Users.Login;
+using SubastaYa.Application.UseCases.Users.ListarMisPujas;
 
 namespace SubastaYa.Api.Controllers;
 
@@ -27,3 +28,4 @@ public class SessionsController : ControllerBase
         return Ok(result);
     }
 }
+

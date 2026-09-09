@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using SubastaYa.Domain.Entities;
 using SubastaYa.Domain.Enums;
-using SubastaYa.Application.Interfaces;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
 
 namespace SubastaYa.Infrastructure.Persistence.Repositories;
 
@@ -104,3 +105,4 @@ public class SubastaRepository : ISubastaRepository
             .ToListAsync();
     }
 }
+

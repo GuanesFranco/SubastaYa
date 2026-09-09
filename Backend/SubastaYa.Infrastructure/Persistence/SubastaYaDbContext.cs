@@ -125,5 +125,23 @@ public class SubastaYaDbContext : DbContext
             new Categoria { Id = 3, Nombre = "Coleccionables", UrlIcono = "https://example.com/icon-collect.png" },
             new Categoria { Id = 4, Nombre = "Indumentaria", UrlIcono = "https://example.com/icon-clothes.png" }
         );
+
+        var dateTimeConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime, DateTime>(
+            v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+        var nullableDateTimeConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime?, DateTime?>(
+            v => v, v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
+                {
+                    property.SetValueConverter(
+                        property.ClrType == typeof(DateTime) ? dateTimeConverter : nullableDateTimeConverter);
+                }
+            }
+        }
     }
 }

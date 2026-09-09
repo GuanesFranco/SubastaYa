@@ -1,4 +1,5 @@
-using SubastaYa.Application.Interfaces;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
 using BC = BCrypt.Net.BCrypt;
 
 namespace SubastaYa.Infrastructure.Auth;
@@ -15,3 +16,4 @@ public class BCryptPasswordHasher : IPasswordHasher
         return BC.Verify(password, hash);
     }
 }
+
