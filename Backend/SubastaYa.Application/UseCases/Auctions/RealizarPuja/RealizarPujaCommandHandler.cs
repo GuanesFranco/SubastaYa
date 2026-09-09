@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Notifications;
@@ -11,6 +12,7 @@ namespace SubastaYa.Application.UseCases.Auctions.RealizarPuja;
 
 public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, PujaResultadoDto>
 {
+    private readonly ILogger<RealizarPujaCommandHandler> _logger;
     private static readonly TimeSpan VentanaAntiSniping = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan ExtensionAntiSniping = TimeSpan.FromMinutes(2);
 
@@ -25,8 +27,9 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
         IBilleteraRepository billeteraRepository,
         IAuditoriaLogRepository auditoriaLogRepository,
         INotificadorSubastas notificador,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork, ILogger<RealizarPujaCommandHandler> logger)
     {
+        _logger = logger;
         _subastaRepository = subastaRepository;
         _billeteraRepository = billeteraRepository;
         _auditoriaLogRepository = auditoriaLogRepository;
@@ -36,6 +39,7 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
 
     public async Task<PujaResultadoDto> Handle(RealizarPujaCommand command)
     {
+        _logger.LogInformation("Ejecutando RealizarPujaCommandHandler...");
         var subasta = await _subastaRepository.ObtenerParaPujarAsync(command.SubastaId)
             ?? throw new KeyNotFoundException("La subasta no existe.");
 
@@ -168,5 +172,6 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
         await _unitOfWork.SaveChangesAsync();
     }
 }
+
 
 

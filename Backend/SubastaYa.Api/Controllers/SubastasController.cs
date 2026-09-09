@@ -22,19 +22,22 @@ public class SubastasController : ControllerBase
     private readonly ObtenerSubastaQueryHandler _obtenerSubastaHandler;
     private readonly ListarPujasQueryHandler _listarPujasHandler;
     private readonly RealizarPujaCommandHandler _realizarPujaHandler;
+    private readonly ILogger<SubastasController> _logger;
 
     public SubastasController(
         CrearSubastaCommandHandler crearSubastaHandler,
         ListarSubastasQueryHandler listarSubastasHandler,
         ObtenerSubastaQueryHandler obtenerSubastaHandler,
         ListarPujasQueryHandler listarPujasHandler,
-        RealizarPujaCommandHandler realizarPujaHandler)
+        RealizarPujaCommandHandler realizarPujaHandler,
+        ILogger<SubastasController> logger)
     {
         _crearSubastaHandler = crearSubastaHandler;
         _listarSubastasHandler = listarSubastasHandler;
         _obtenerSubastaHandler = obtenerSubastaHandler;
         _listarPujasHandler = listarPujasHandler;
         _realizarPujaHandler = realizarPujaHandler;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -44,7 +47,10 @@ public class SubastasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CrearSubasta([FromBody] CrearSubastaDto dto)
     {
-        var command = new CrearSubastaCommand(User.ObtenerUsuarioId(), dto);
+        var userId = User.ObtenerUsuarioId();
+        _logger.LogInformation("Usuario {UserId} creando subasta: {Titulo}", userId, dto.Titulo);
+        
+        var command = new CrearSubastaCommand(userId, dto);
         var subastaId = await _crearSubastaHandler.Handle(command);
 
         return CreatedAtAction(nameof(GetSubasta), new { id = subastaId }, new { id = subastaId });
@@ -54,6 +60,7 @@ public class SubastasController : ControllerBase
     [ProducesResponseType(typeof(PaginatedResult<SubastaResumenDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSubastas([FromQuery] ListarSubastasFiltroDto filtro)
     {
+        _logger.LogInformation("Consultando lista de subastas. Estado: {Estado}", filtro.Estado?.ToString() ?? "Todos");
         var query = new ListarSubastasQuery(filtro);
         var result = await _listarSubastasHandler.Handle(query);
         return Ok(result);
@@ -63,6 +70,7 @@ public class SubastasController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<PujaDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPujas(int id)
     {
+        _logger.LogInformation("Consultando historial de pujas para la subasta {SubastaId}.", id);
         var query = new ListarPujasQuery(id);
         var result = await _listarPujasHandler.Handle(query);
         return Ok(result);
@@ -78,7 +86,10 @@ public class SubastasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Pujar(int id, [FromBody] PujaRequestDto dto)
     {
-        var command = new RealizarPujaCommand(id, User.ObtenerUsuarioId(), dto.Monto);
+        var userId = User.ObtenerUsuarioId();
+        _logger.LogInformation("Usuario {UserId} enviando puja por {Monto} a la subasta {SubastaId}.", userId, dto.Monto, id);
+        
+        var command = new RealizarPujaCommand(id, userId, dto.Monto);
         var result = await _realizarPujaHandler.Handle(command);
 
         return StatusCode(StatusCodes.Status201Created, result);
@@ -89,6 +100,7 @@ public class SubastasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSubasta(int id)
     {
+        _logger.LogInformation("Consultando detalle de la subasta {SubastaId}.", id);
         var query = new ObtenerSubastaQuery(id);
         var result = await _obtenerSubastaHandler.Handle(query);
         return Ok(result);

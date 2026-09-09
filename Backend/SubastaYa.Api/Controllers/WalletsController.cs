@@ -18,15 +18,18 @@ public class WalletsController : ControllerBase
     private readonly GetWalletBalanceQueryHandler _balanceHandler;
     private readonly DepositCommandHandler _depositHandler;
     private readonly GetWalletTransactionsQueryHandler _transactionsHandler;
+    private readonly ILogger<WalletsController> _logger;
 
     public WalletsController(
         GetWalletBalanceQueryHandler balanceHandler,
         DepositCommandHandler depositHandler,
-        GetWalletTransactionsQueryHandler transactionsHandler)
+        GetWalletTransactionsQueryHandler transactionsHandler,
+        ILogger<WalletsController> logger)
     {
         _balanceHandler = balanceHandler;
         _depositHandler = depositHandler;
         _transactionsHandler = transactionsHandler;
+        _logger = logger;
     }
 
     [HttpGet("me")]
@@ -34,7 +37,10 @@ public class WalletsController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ObtenerBalance()
     {
-        var result = await _balanceHandler.Handle(new GetWalletBalanceQuery(User.ObtenerUsuarioId()));
+        var userId = User.ObtenerUsuarioId();
+        _logger.LogInformation("Usuario {UserId} solicitó consultar su balance.", userId);
+        
+        var result = await _balanceHandler.Handle(new GetWalletBalanceQuery(userId));
         return Ok(result);
     }
 
@@ -44,7 +50,10 @@ public class WalletsController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Depositar([FromBody] DepositoDto dto)
     {
-        var result = await _depositHandler.Handle(new DepositCommand(User.ObtenerUsuarioId(), dto.Monto));
+        var userId = User.ObtenerUsuarioId();
+        _logger.LogInformation("Usuario {UserId} solicitó depositar {Monto}.", userId, dto.Monto);
+        
+        var result = await _depositHandler.Handle(new DepositCommand(userId, dto.Monto));
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
@@ -52,7 +61,10 @@ public class WalletsController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<MovimientoDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ObtenerMovimientos()
     {
-        var result = await _transactionsHandler.Handle(new GetWalletTransactionsQuery(User.ObtenerUsuarioId()));
+        var userId = User.ObtenerUsuarioId();
+        _logger.LogInformation("Usuario {UserId} solicitó su historial de transacciones.", userId);
+        
+        var result = await _transactionsHandler.Handle(new GetWalletTransactionsQuery(userId));
         return Ok(result);
     }
 }

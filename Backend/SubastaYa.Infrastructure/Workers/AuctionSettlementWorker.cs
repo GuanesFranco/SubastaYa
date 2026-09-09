@@ -23,7 +23,7 @@ public class AuctionSettlementWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("AuctionSettlementWorker (Fase 6) iniciado.");
+        _logger.LogInformation("AuctionSettlementWorker iniciado y escuchando subastas.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -48,7 +48,12 @@ public class AuctionSettlementWorker : BackgroundService
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var ahora = FechaArgentina.AhoraUtc;
-        var pendientes = await subastaRepo.ObtenerPendientesDeActivacionAsync(ahora);
+        var pendientes = (await subastaRepo.ObtenerPendientesDeActivacionAsync(ahora)).ToList();
+
+        if (pendientes.Any())
+        {
+            _logger.LogInformation("Activador: Procesando {Cantidad} subastas programadas para activarse.", pendientes.Count);
+        }
 
         foreach (var subasta in pendientes)
         {
@@ -77,7 +82,12 @@ public class AuctionSettlementWorker : BackgroundService
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var ahora = FechaArgentina.AhoraUtc;
-        var pendientes = await subastaRepo.ObtenerPendientesDeCierreAsync(ahora);
+        var pendientes = (await subastaRepo.ObtenerPendientesDeCierreAsync(ahora)).ToList();
+
+        if (pendientes.Any())
+        {
+            _logger.LogInformation("Liquidador: Procesando el cierre de {Cantidad} subastas activas vencidas.", pendientes.Count);
+        }
 
         foreach (var subasta in pendientes)
         {
