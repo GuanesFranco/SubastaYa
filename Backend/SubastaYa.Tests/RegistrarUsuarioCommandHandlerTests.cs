@@ -1,7 +1,8 @@
 using NSubstitute;
 using SubastaYa.Application.DTOs.Auth;
-using SubastaYa.Application.Interfaces;
-using SubastaYa.Application.UseCases.Users.Commands;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
+using SubastaYa.Application.UseCases.Users.RegistrarUsuario;
 using SubastaYa.Domain.Entities;
 using SubastaYa.Domain.Exceptions;
 
@@ -54,3 +55,5 @@ public class RegistrarUsuarioCommandHandlerTests
         await _unitOfWorkMock.DidNotReceive().SaveChangesAsync();
     }
 }
+
+

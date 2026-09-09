@@ -1,0 +1,47 @@
+using SubastaYa.Application.Common.Time;
+using SubastaYa.Application.DTOs.Wallet;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
+using SubastaYa.Domain.Entities;
+using SubastaYa.Domain.Enums;
+
+namespace SubastaYa.Application.UseCases.Wallets.Deposit;
+
+public class DepositCommandHandler : ICommandHandler<DepositCommand, WalletBalanceDto>
+{
+    private readonly IBilleteraRepository _billeteraRepository;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public DepositCommandHandler(IBilleteraRepository billeteraRepository, IUnitOfWork unitOfWork)
+    {
+        _billeteraRepository = billeteraRepository;
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<WalletBalanceDto> Handle(DepositCommand command)
+    {
+        var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.UsuarioId);
+        if (billetera == null)
+        {
+            throw new KeyNotFoundException("Billetera no encontrada.");
+        }
+
+        billetera.Depositar(command.Monto);
+
+        var movimiento = new TransaccionLedger
+        {
+            BilleteraId = billetera.Id,
+            Tipo = TipoTransaccionLedger.Deposito,
+            Monto = command.Monto,
+            Fecha = FechaArgentina.AhoraUtc,
+            Descripcion = "Carga de saldo simulada"
+        };
+
+        await _billeteraRepository.AgregarMovimientoAsync(movimiento);
+        await _unitOfWork.SaveChangesAsync();
+
+        return new WalletBalanceDto(billetera.SaldoTotal, billetera.SaldoRetenido, billetera.SaldoDisponible);
+    }
+}
+
+

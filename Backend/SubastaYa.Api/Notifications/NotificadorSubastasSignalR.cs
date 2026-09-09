@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.SignalR;
 using SubastaYa.Api.Hubs;
 using SubastaYa.Application.DTOs.Notifications;
-using SubastaYa.Application.Interfaces;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
 
 namespace SubastaYa.Api.Notifications;
 
@@ -43,3 +44,5 @@ public class NotificadorSubastasSignalR : INotificadorSubastas
         }
     }
 }
+
+

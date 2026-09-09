@@ -3,8 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Api.Extensions;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Auth;
-using SubastaYa.Application.UseCases.Auctions.Queries;
-using SubastaYa.Application.UseCases.Users.Commands;
+using SubastaYa.Application.UseCases.Auctions.ListarSubastas;
+using SubastaYa.Application.UseCases.Auctions.ObtenerSubasta;
+using SubastaYa.Application.UseCases.Auctions.ListarPujas;
+using SubastaYa.Application.UseCases.Users.ListarMisPujas;
+using SubastaYa.Application.UseCases.Auctions.ListarMisSubastas;
+using SubastaYa.Application.UseCases.Users.RegistrarUsuario;
 
 namespace SubastaYa.Api.Controllers;
 
@@ -59,3 +63,5 @@ public class UsuariosController : ControllerBase
         return Ok(result);
     }
 }
+
+

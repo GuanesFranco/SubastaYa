@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using SubastaYa.Application.Interfaces;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
 using SubastaYa.Domain.Exceptions;
 
 namespace SubastaYa.Infrastructure.Persistence;
@@ -31,3 +32,4 @@ public class UnitOfWork : IUnitOfWork
         _ctx.ChangeTracker.Clear();
     }
 }
+

@@ -1,0 +1,43 @@
+using SubastaYa.Application.Common.Time;
+using SubastaYa.Application.DTOs.Auctions;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
+
+namespace SubastaYa.Application.UseCases.Auctions.ObtenerSubasta;
+
+public class ObtenerSubastaQueryHandler : IQueryHandler<ObtenerSubastaQuery, SubastaDetalleDto>
+{
+    private readonly ISubastaRepository _subastaRepository;
+
+    public ObtenerSubastaQueryHandler(ISubastaRepository subastaRepository)
+    {
+        _subastaRepository = subastaRepository;
+    }
+
+    public async Task<SubastaDetalleDto> Handle(ObtenerSubastaQuery query)
+    {
+        var subasta = await _subastaRepository.ObtenerDetalleAsync(query.Id);
+
+        if (subasta == null)
+        {
+            throw new KeyNotFoundException($"No se encontró la subasta con ID {query.Id}.");
+        }
+
+        return new SubastaDetalleDto(
+            subasta.Id,
+            subasta.Titulo,
+            subasta.Descripcion,
+            subasta.UrlImagen,
+            subasta.PrecioBase,
+            subasta.PrecioActual,
+            FechaArgentina.ComoUtc(subasta.FechaInicio),
+            FechaArgentina.ComoUtc(subasta.FechaFin),
+            subasta.Estado,
+            subasta.Categoria.Nombre,
+            subasta.Vendedor.Nombre,
+            subasta.PujaLiderId
+        );
+    }
+}
+
+
