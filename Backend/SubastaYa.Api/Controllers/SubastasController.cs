@@ -8,7 +8,6 @@ using SubastaYa.Application.UseCases.Auctions.RealizarPuja;
 using SubastaYa.Application.UseCases.Auctions.ListarSubastas;
 using SubastaYa.Application.UseCases.Auctions.ObtenerSubasta;
 using SubastaYa.Application.UseCases.Auctions.ListarPujas;
-using SubastaYa.Application.UseCases.Auctions.ListarMisSubastas;
 
 namespace SubastaYa.Api.Controllers;
 

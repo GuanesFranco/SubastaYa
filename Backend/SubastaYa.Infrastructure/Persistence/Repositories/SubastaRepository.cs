@@ -104,18 +104,26 @@ public class SubastaRepository : ISubastaRepository
             .OrderByDescending(s => s.FechaFin)
             .ToListAsync();
     }
-    public async Task<IEnumerable<Subasta>> ObtenerPendientesDeActivacionAsync(DateTime ahoraUtc)
+    public async Task<IEnumerable<int>> ObtenerIdsPendientesDeActivacionAsync(DateTime ahoraUtc)
     {
         return await _context.Subastas
             .Where(s => s.Estado == EstadoSubasta.Programada && s.FechaInicio <= ahoraUtc)
+            .Select(s => s.Id)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Subasta>> ObtenerPendientesDeCierreAsync(DateTime ahoraUtc)
+    public async Task<IEnumerable<int>> ObtenerIdsPendientesDeCierreAsync(DateTime ahoraUtc)
+    {
+        return await _context.Subastas
+            .Where(s => s.Estado == EstadoSubasta.Activa && s.FechaFin <= ahoraUtc)
+            .Select(s => s.Id)
+            .ToListAsync();
+    }
+
+    public async Task<Subasta?> ObtenerParaLiquidacionAsync(int id)
     {
         return await _context.Subastas
             .Include(s => s.PujaLider)
-            .Where(s => s.Estado == EstadoSubasta.Activa && s.FechaFin <= ahoraUtc)
-            .ToListAsync();
+            .FirstOrDefaultAsync(s => s.Id == id);
     }
 }
