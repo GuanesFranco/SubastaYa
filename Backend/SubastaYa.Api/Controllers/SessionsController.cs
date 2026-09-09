@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Application.DTOs.Auth;
 using SubastaYa.Application.UseCases.Users.Login;
-using SubastaYa.Application.UseCases.Users.ListarMisPujas;
 
 namespace SubastaYa.Api.Controllers;
 

@@ -43,61 +43,77 @@ public class AuctionSettlementWorker : BackgroundService
 
     private async Task ProcesarSubastasProgramadasAsync(CancellationToken stoppingToken)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var subastaRepo = scope.ServiceProvider.GetRequiredService<ISubastaRepository>();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
-        var ahora = FechaArgentina.AhoraUtc;
-        var pendientes = (await subastaRepo.ObtenerPendientesDeActivacionAsync(ahora)).ToList();
-
-        if (pendientes.Any())
+        List<int> pendientesIds;
+        using (var scope = _scopeFactory.CreateScope())
         {
-            _logger.LogInformation("Activador: Procesando {Cantidad} subastas programadas para activarse.", pendientes.Count);
+            var subastaRepo = scope.ServiceProvider.GetRequiredService<ISubastaRepository>();
+            var ahora = FechaArgentina.AhoraUtc;
+            pendientesIds = (await subastaRepo.ObtenerIdsPendientesDeActivacionAsync(ahora)).ToList();
         }
 
-        foreach (var subasta in pendientes)
+        if (pendientesIds.Any())
+        {
+            _logger.LogInformation("Activador: Procesando {Cantidad} subastas programadas para activarse.", pendientesIds.Count);
+        }
+
+        foreach (var id in pendientesIds)
         {
             if (stoppingToken.IsCancellationRequested) return;
 
+            using var scope = _scopeFactory.CreateScope();
+            var subastaRepo = scope.ServiceProvider.GetRequiredService<ISubastaRepository>();
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
             try
             {
+                var subasta = await subastaRepo.ObtenerParaLiquidacionAsync(id);
+                if (subasta == null || subasta.Estado != EstadoSubasta.Programada) continue;
+
                 subasta.Activar();
                 await unitOfWork.SaveChangesAsync();
                 _logger.LogInformation("Subasta {SubastaId} activada exitosamente.", subasta.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al activar la subasta {SubastaId}.", subasta.Id);
+                _logger.LogError(ex, "Error al activar la subasta {SubastaId}.", id);
             }
         }
     }
 
     private async Task ProcesarSubastasFinalizadasAsync(CancellationToken stoppingToken)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var subastaRepo = scope.ServiceProvider.GetRequiredService<ISubastaRepository>();
-        var billeteraRepo = scope.ServiceProvider.GetRequiredService<IBilleteraRepository>();
-        var logRepo = scope.ServiceProvider.GetRequiredService<IAuditoriaLogRepository>();
-        var notificador = scope.ServiceProvider.GetRequiredService<INotificadorSubastas>();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
-        var ahora = FechaArgentina.AhoraUtc;
-        var pendientes = (await subastaRepo.ObtenerPendientesDeCierreAsync(ahora)).ToList();
-
-        if (pendientes.Any())
+        List<int> pendientesIds;
+        using (var scope = _scopeFactory.CreateScope())
         {
-            _logger.LogInformation("Liquidador: Procesando el cierre de {Cantidad} subastas activas vencidas.", pendientes.Count);
+            var subastaRepo = scope.ServiceProvider.GetRequiredService<ISubastaRepository>();
+            var ahora = FechaArgentina.AhoraUtc;
+            pendientesIds = (await subastaRepo.ObtenerIdsPendientesDeCierreAsync(ahora)).ToList();
         }
 
-        foreach (var subasta in pendientes)
+        if (pendientesIds.Any())
+        {
+            _logger.LogInformation("Liquidador: Procesando el cierre de {Cantidad} subastas activas vencidas.", pendientesIds.Count);
+        }
+
+        foreach (var id in pendientesIds)
         {
             if (stoppingToken.IsCancellationRequested) return;
 
+            using var scope = _scopeFactory.CreateScope();
+            var subastaRepo = scope.ServiceProvider.GetRequiredService<ISubastaRepository>();
+            var billeteraRepo = scope.ServiceProvider.GetRequiredService<IBilleteraRepository>();
+            var logRepo = scope.ServiceProvider.GetRequiredService<IAuditoriaLogRepository>();
+            var notificador = scope.ServiceProvider.GetRequiredService<INotificadorSubastas>();
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var ahora = FechaArgentina.AhoraUtc;
+
             try
             {
+                var subasta = await subastaRepo.ObtenerParaLiquidacionAsync(id);
+                if (subasta == null || subasta.Estado != EstadoSubasta.Activa) continue;
+
                 if (subasta.PujaLiderId == null)
                 {
-                    // Nadie pujó, pasa a Desierta
                     subasta.MarcarDesierta();
                     
                     var log = new AuditoriaLog
@@ -118,7 +134,6 @@ public class AuctionSettlementWorker : BackgroundService
                 }
                 else
                 {
-                    // Liquidación (Escrow)
                     var compradorId = subasta.PujaLider!.CompradorId;
                     var vendedorId = subasta.VendedorId;
                     var monto = subasta.PrecioActual;
@@ -131,18 +146,14 @@ public class AuctionSettlementWorker : BackgroundService
                         throw new InvalidOperationException("Billeteras no encontradas durante la liquidación.");
                     }
 
-                    // 1. Debitar al comprador (sale del saldo retenido y disminuye el saldo total)
                     billeteraComprador.Debitar(monto);
-                    
-                    // 2. Acreditar al vendedor
                     billeteraVendedor.Acreditar(monto);
 
-                    // 3. Registrar Ledger
                     var debito = new TransaccionLedger
                     {
                         BilleteraId = billeteraComprador.Id,
                         Tipo = TipoTransaccionLedger.Debito,
-                        Monto = -monto,
+                        Monto = monto,
                         Fecha = ahora,
                         SubastaId = subasta.Id,
                         Descripcion = $"Pago por victoria en subasta {subasta.Id}"
@@ -159,10 +170,8 @@ public class AuctionSettlementWorker : BackgroundService
                     await billeteraRepo.AgregarMovimientoAsync(debito);
                     await billeteraRepo.AgregarMovimientoAsync(credito);
 
-                    // 4. Finalizar subasta
                     subasta.Finalizar(compradorId, monto);
 
-                    // 5. Auditoría
                     var log = new AuditoriaLog
                     {
                         Entidad = EntidadesAuditoria.Subasta,
@@ -173,20 +182,17 @@ public class AuctionSettlementWorker : BackgroundService
                     };
                     await logRepo.AgregarAsync(log);
 
-                    // Guardar transacción (UnitOfWork)
                     await unitOfWork.SaveChangesAsync();
                     _logger.LogInformation("Subasta {SubastaId} finalizada exitosamente con ganador {GanadorId}.", subasta.Id, compradorId);
 
-                    // 6. Notificar por SignalR (se hace después de guardar para asegurar la info en BD)
                     await notificador.SubastaCerradaAsync(new SubastaCerradaDto(
                         subasta.Id, subasta.Estado, compradorId, monto));
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error crítico liquidando la subasta {SubastaId}.", subasta.Id);
+                _logger.LogError(ex, "Error crítico liquidando la subasta {SubastaId}.", id);
             }
         }
     }
 }
-
