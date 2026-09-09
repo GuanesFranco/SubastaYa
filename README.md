@@ -42,6 +42,29 @@ Las migraciones se aplican solas al arrancar, así que la base `SubastaYaDB` se 
 Para probar los endpoints protegidos: `POST /api/v1/sessions` para obtener el token, y después
 el botón **Authorize** de Swagger.
 
+## Datos de prueba
+
+La base se siembra sola en el primer arranque (solo si está vacía). Los cuatro usuarios
+comparten la contraseña **`Test1234!`**:
+
+| Email | Para qué sirve |
+| --- | --- |
+| `vendedor@subastaya.com` | Publicó las cinco subastas |
+| `comprador1@subastaya.com` | Lidera la subasta activa, con $45.000 retenidos |
+| `comprador2@subastaya.com` | Fue superado en una subasta y lidera una vencida |
+| `sinfondos@subastaya.com` | Billetera en $0, para probar el rechazo por saldo (422) |
+
+Y cinco subastas, una por escenario:
+
+- **Activa** con dos pujas previas — el caso normal.
+- **Activa que vence en 90 segundos** — para ver la regla anti-sniping en vivo.
+- **Programada** para dentro de 24h — todavía no acepta pujas.
+- **Vencida con ganador** y **vencida sin ofertas** — el worker las procesa a los pocos
+  segundos de arrancar: una queda `Finalizada` con la plata transferida, la otra `Desierta`.
+
+Las fechas se calculan en el momento del seed, así que los escenarios siguen siendo válidos sin
+importar cuándo se clone el repositorio.
+
 ## Tests
 
 ```bash
