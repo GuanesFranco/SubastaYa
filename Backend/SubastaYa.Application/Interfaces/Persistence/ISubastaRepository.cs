@@ -15,4 +15,7 @@ public interface ISubastaRepository
     Task<Subasta?> ObtenerParaPujarAsync(int id);
     Task AgregarPujaAsync(Puja puja);
     Task<IEnumerable<Subasta>> ObtenerSubastasDondeParticipoAsync(int compradorId);
+    Task<IEnumerable<Subasta>> ObtenerPendientesDeActivacionAsync(DateTime ahoraUtc);
+    Task<IEnumerable<Subasta>> ObtenerPendientesDeCierreAsync(DateTime ahoraUtc);
 }
+
