@@ -11,10 +11,12 @@ namespace SubastaYa.Api.Controllers;
 public class SessionsController : ControllerBase
 {
     private readonly LoginQueryHandler _handler;
+    private readonly ILogger<SessionsController> _logger;
 
-    public SessionsController(LoginQueryHandler handler)
+    public SessionsController(LoginQueryHandler handler, ILogger<SessionsController> logger)
     {
         _handler = handler;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -23,6 +25,7 @@ public class SessionsController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
+        _logger.LogInformation("Intento de login para email: {Email}", dto.Email);
         var query = new LoginQuery(dto);
         var result = await _handler.Handle(query);
         return Ok(result);

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.Interfaces.Persistence;
@@ -7,15 +8,18 @@ namespace SubastaYa.Application.UseCases.Auctions.ObtenerSubasta;
 
 public class ObtenerSubastaQueryHandler : IQueryHandler<ObtenerSubastaQuery, SubastaDetalleDto>
 {
+    private readonly ILogger<ObtenerSubastaQueryHandler> _logger;
     private readonly ISubastaRepository _subastaRepository;
 
-    public ObtenerSubastaQueryHandler(ISubastaRepository subastaRepository)
+    public ObtenerSubastaQueryHandler(ISubastaRepository subastaRepository, ILogger<ObtenerSubastaQueryHandler> logger)
     {
+        _logger = logger;
         _subastaRepository = subastaRepository;
     }
 
     public async Task<SubastaDetalleDto> Handle(ObtenerSubastaQuery query)
     {
+        _logger.LogInformation("Ejecutando ObtenerSubastaQueryHandler...");
         var subasta = await _subastaRepository.ObtenerDetalleAsync(query.Id);
 
         if (subasta == null)
@@ -39,5 +43,6 @@ public class ObtenerSubastaQueryHandler : IQueryHandler<ObtenerSubastaQuery, Sub
         );
     }
 }
+
 
 

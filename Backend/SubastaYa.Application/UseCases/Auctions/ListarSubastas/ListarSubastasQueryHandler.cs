@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Common;
@@ -8,15 +9,18 @@ namespace SubastaYa.Application.UseCases.Auctions.ListarSubastas;
 
 public class ListarSubastasQueryHandler
 {
+    private readonly ILogger<ListarSubastasQueryHandler> _logger;
     private readonly ISubastaRepository _subastaRepository;
 
-    public ListarSubastasQueryHandler(ISubastaRepository subastaRepository)
+    public ListarSubastasQueryHandler(ISubastaRepository subastaRepository, ILogger<ListarSubastasQueryHandler> logger)
     {
+        _logger = logger;
         _subastaRepository = subastaRepository;
     }
 
     public async Task<PaginatedResult<SubastaResumenDto>> Handle(ListarSubastasQuery query)
     {
+        _logger.LogInformation("Ejecutando ListarSubastasQueryHandler...");
         var f = query.Filtro;
         var (items, total) = await _subastaRepository.ObtenerFiltradasAsync(
             f.CategoriaId, f.Estado, f.PrecioMin, f.PrecioMax, f.OrderBy, f.Page, f.PageSize);
@@ -41,4 +45,7 @@ public class ListarSubastasQueryHandler
         };
     }
 }
+
+
+
 

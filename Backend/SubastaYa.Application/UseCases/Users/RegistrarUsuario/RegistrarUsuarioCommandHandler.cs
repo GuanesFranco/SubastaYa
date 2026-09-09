@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auth;
 using SubastaYa.Application.Interfaces.Persistence;
@@ -8,6 +9,7 @@ namespace SubastaYa.Application.UseCases.Users.RegistrarUsuario;
 
 public class RegistrarUsuarioCommandHandler : ICommandHandler<RegistrarUsuarioCommand, AuthResponseDto>
 {
+    private readonly ILogger<RegistrarUsuarioCommandHandler> _logger;
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
@@ -17,8 +19,9 @@ public class RegistrarUsuarioCommandHandler : ICommandHandler<RegistrarUsuarioCo
         IUsuarioRepository usuarioRepository,
         IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
-        IJwtProvider jwtProvider)
+        IJwtProvider jwtProvider, ILogger<RegistrarUsuarioCommandHandler> logger)
     {
+        _logger = logger;
         _usuarioRepository = usuarioRepository;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
@@ -27,6 +30,7 @@ public class RegistrarUsuarioCommandHandler : ICommandHandler<RegistrarUsuarioCo
 
     public async Task<AuthResponseDto> Handle(RegistrarUsuarioCommand command)
     {
+        _logger.LogInformation("Ejecutando RegistrarUsuarioCommandHandler...");
         var existe = await _usuarioRepository.ObtenerPorEmailAsync(command.Dto.Email);
         if (existe != null)
         {
@@ -54,5 +58,6 @@ public class RegistrarUsuarioCommandHandler : ICommandHandler<RegistrarUsuarioCo
         return new AuthResponseDto(token, usuario.Id, usuario.Email, usuario.Nombre);
     }
 }
+
 
 

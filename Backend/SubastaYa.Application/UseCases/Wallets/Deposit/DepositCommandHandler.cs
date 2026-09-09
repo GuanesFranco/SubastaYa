@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Wallet;
 using SubastaYa.Application.Interfaces.Persistence;
@@ -9,17 +10,20 @@ namespace SubastaYa.Application.UseCases.Wallets.Deposit;
 
 public class DepositCommandHandler : ICommandHandler<DepositCommand, WalletBalanceDto>
 {
+    private readonly ILogger<DepositCommandHandler> _logger;
     private readonly IBilleteraRepository _billeteraRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public DepositCommandHandler(IBilleteraRepository billeteraRepository, IUnitOfWork unitOfWork)
+    public DepositCommandHandler(IBilleteraRepository billeteraRepository, IUnitOfWork unitOfWork, ILogger<DepositCommandHandler> logger)
     {
+        _logger = logger;
         _billeteraRepository = billeteraRepository;
         _unitOfWork = unitOfWork;
     }
 
     public async Task<WalletBalanceDto> Handle(DepositCommand command)
     {
+        _logger.LogInformation("Ejecutando DepositCommandHandler...");
         var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.UsuarioId);
         if (billetera == null)
         {
@@ -43,5 +47,6 @@ public class DepositCommandHandler : ICommandHandler<DepositCommand, WalletBalan
         return new WalletBalanceDto(billetera.SaldoTotal, billetera.SaldoRetenido, billetera.SaldoDisponible);
     }
 }
+
 
 

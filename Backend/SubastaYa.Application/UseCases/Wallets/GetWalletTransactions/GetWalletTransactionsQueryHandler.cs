@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Wallet;
 using SubastaYa.Application.Interfaces.Persistence;
@@ -7,15 +8,18 @@ namespace SubastaYa.Application.UseCases.Wallets.GetWalletTransactions;
 
 public class GetWalletTransactionsQueryHandler
 {
+    private readonly ILogger<GetWalletTransactionsQueryHandler> _logger;
     private readonly IBilleteraRepository _billeteraRepository;
 
-    public GetWalletTransactionsQueryHandler(IBilleteraRepository billeteraRepository)
+    public GetWalletTransactionsQueryHandler(IBilleteraRepository billeteraRepository, ILogger<GetWalletTransactionsQueryHandler> logger)
     {
+        _logger = logger;
         _billeteraRepository = billeteraRepository;
     }
 
     public async Task<List<MovimientoDto>> Handle(GetWalletTransactionsQuery query)
     {
+        _logger.LogInformation("Ejecutando GetWalletTransactionsQueryHandler...");
         var movimientos = await _billeteraRepository.ObtenerMovimientosPorUsuarioIdAsync(query.UsuarioId);
 
         return movimientos
@@ -23,4 +27,7 @@ public class GetWalletTransactionsQueryHandler
             .ToList();
     }
 }
+
+
+
 

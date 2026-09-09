@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.Interfaces.Persistence;
 using SubastaYa.Application.Interfaces.Services;
@@ -8,17 +9,20 @@ namespace SubastaYa.Application.UseCases.Auctions.CrearSubasta;
 
 public class CrearSubastaCommandHandler : ICommandHandler<CrearSubastaCommand, int>
 {
+    private readonly ILogger<CrearSubastaCommandHandler> _logger;
     private readonly ISubastaRepository _subastaRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public CrearSubastaCommandHandler(ISubastaRepository subastaRepository, IUnitOfWork unitOfWork)
+    public CrearSubastaCommandHandler(ISubastaRepository subastaRepository, IUnitOfWork unitOfWork, ILogger<CrearSubastaCommandHandler> logger)
     {
+        _logger = logger;
         _subastaRepository = subastaRepository;
         _unitOfWork = unitOfWork;
     }
 
     public async Task<int> Handle(CrearSubastaCommand command)
     {
+        _logger.LogInformation("Ejecutando CrearSubastaCommandHandler...");
         var dto = command.Dto;
 
         if (string.IsNullOrWhiteSpace(dto.Titulo))
@@ -78,5 +82,6 @@ public class CrearSubastaCommandHandler : ICommandHandler<CrearSubastaCommand, i
         return subasta.Id;
     }
 }
+
 
 
