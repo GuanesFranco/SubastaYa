@@ -19,6 +19,7 @@ using SubastaYa.Application.UseCases.Wallets.GetWalletTransactions;
 using SubastaYa.Infrastructure.Auth;
 using SubastaYa.Infrastructure.Persistence;
 using SubastaYa.Infrastructure.Persistence.Repositories;
+using SubastaYa.Infrastructure.Workers;
 using SubastaYa.Application.UseCases.Categories.ListarCategorias;
 using SubastaYa.Application.UseCases.Auctions.CrearSubasta;
 using SubastaYa.Application.UseCases.Auctions.RealizarPuja;
@@ -37,6 +38,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
 
 builder.Services.AddProblemDetails();
+
+builder.Services.AddCors(opciones =>
+    opciones.AddPolicy("frontend", politica => politica
+        .WithOrigins("http://localhost:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
 
 builder.Services.AddSwaggerGen(c =>
 {
@@ -93,6 +100,12 @@ builder.Services.AddScoped<ListarMisSubastasQueryHandler>();
 builder.Services.AddScoped<RealizarPujaCommandHandler>();
 builder.Services.AddScoped<ListarMisPujasQueryHandler>();
 
+builder.Services.AddHostedService<AuctionSettlementWorker>();
+
+var jwtSecret = builder.Configuration["Jwt:Secret"]
+    ?? throw new InvalidOperationException(
+        "Falta la clave Jwt:Secret. Configurala con: dotnet user-secrets set \"Jwt:Secret\" \"<clave>\" --project SubastaYa.Api");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -104,7 +117,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
         };
 
         options.Events = new JwtBearerEvents
@@ -175,6 +188,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
