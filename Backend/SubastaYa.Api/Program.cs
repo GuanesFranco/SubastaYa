@@ -177,6 +177,9 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<SubastaYaDbContext>();
     dbContext.Database.Migrate();
+
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    await DbInitializer.SeedAsync(dbContext, passwordHasher);
 }
 
 app.UseMiddleware<ExceptionMiddleware>();
