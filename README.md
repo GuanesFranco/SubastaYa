@@ -47,12 +47,16 @@ el botón **Authorize** de Swagger.
 La base se siembra sola en el primer arranque (solo si está vacía). Los cuatro usuarios
 comparten la contraseña **`Test1234!`**:
 
-| Email | Para qué sirve |
-| --- | --- |
-| `vendedor@subastaya.com` | Publicó las cinco subastas |
-| `comprador1@subastaya.com` | Lidera la subasta activa, con $45.000 retenidos |
-| `comprador2@subastaya.com` | Fue superado en una subasta y lidera una vencida |
-| `sinfondos@subastaya.com` | Billetera en $0, para probar el rechazo por saldo (422) |
+| Email | Saldo | Para qué sirve |
+| --- | --- | --- |
+| `vendedor@test.com` | $0 | Publicó las cinco subastas |
+| `comprador1@test.com` | $150.000 · $45.000 retenidos | Lidera la subasta activa |
+| `comprador2@test.com` | $200.000 | Fue superado en una subasta y lidera la vencida |
+| `sinfondos@test.com` | $500 | Tiene plata pero no le alcanza: sirve para probar el rechazo por saldo (422) |
+
+Los cuatro salen de los **datos semilla obligatorios** del enunciado (sección 3.3). El
+disponible de `comprador2` arranca con la retención de la subasta vencida que lidera, y vuelve
+a su valor final apenas el worker la liquida, a los pocos segundos de arrancar.
 
 Y cinco subastas, una por escenario:
 
