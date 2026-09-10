@@ -20,10 +20,10 @@ public static class DbInitializer
         var ahora = FechaArgentina.AhoraUtc;
         var hash = passwordHasher.Hash(PasswordSemilla);
 
-        var vendedor = CrearUsuario("vendedor@subastaya.com", "Sofía Vendedora", hash, ahora);
-        var comprador1 = CrearUsuario("comprador1@subastaya.com", "Julián Comprador", hash, ahora);
-        var comprador2 = CrearUsuario("comprador2@subastaya.com", "Marina Compradora", hash, ahora);
-        var sinFondos = CrearUsuario("sinfondos@subastaya.com", "Pedro Sin Fondos", hash, ahora);
+        var vendedor = CrearUsuario("vendedor@test.com", "Sofía Vendedora", hash, ahora);
+        var comprador1 = CrearUsuario("comprador1@test.com", "Julián Comprador", hash, ahora);
+        var comprador2 = CrearUsuario("comprador2@test.com", "Marina Compradora", hash, ahora);
+        var sinFondos = CrearUsuario("sinfondos@test.com", "Pedro Sin Fondos", hash, ahora);
 
         await context.Usuarios.AddRangeAsync(vendedor, comprador1, comprador2, sinFondos);
         await context.SaveChangesAsync();
@@ -33,9 +33,9 @@ public static class DbInitializer
         var billeteraComprador2 = new Billetera(comprador2.Id);
         var billeteraSinFondos = new Billetera(sinFondos.Id);
 
-        billeteraVendedor.Depositar(10_000m);
-        billeteraComprador1.Depositar(200_000m);
-        billeteraComprador2.Depositar(120_000m);
+        billeteraComprador1.Depositar(150_000m);
+        billeteraComprador2.Depositar(200_000m);
+        billeteraSinFondos.Depositar(500m);
 
         await context.Billeteras.AddRangeAsync(
             billeteraVendedor, billeteraComprador1, billeteraComprador2, billeteraSinFondos);
@@ -107,11 +107,11 @@ public static class DbInitializer
         billeteraComprador2.Retener(pujaGanadora.Monto);
 
         await context.TransaccionesLedger.AddRangeAsync(
-            CrearMovimiento(billeteraVendedor.Id, TipoTransaccionLedger.Deposito, 10_000m,
+            CrearMovimiento(billeteraComprador1.Id, TipoTransaccionLedger.Deposito, 150_000m,
                 ahora.AddDays(-5), "Carga de saldo inicial", null),
-            CrearMovimiento(billeteraComprador1.Id, TipoTransaccionLedger.Deposito, 200_000m,
+            CrearMovimiento(billeteraComprador2.Id, TipoTransaccionLedger.Deposito, 200_000m,
                 ahora.AddDays(-5), "Carga de saldo inicial", null),
-            CrearMovimiento(billeteraComprador2.Id, TipoTransaccionLedger.Deposito, 120_000m,
+            CrearMovimiento(billeteraSinFondos.Id, TipoTransaccionLedger.Deposito, 500m,
                 ahora.AddDays(-5), "Carga de saldo inicial", null),
 
             CrearMovimiento(billeteraComprador2.Id, TipoTransaccionLedger.Retencion, pujaSuperada.Monto,
