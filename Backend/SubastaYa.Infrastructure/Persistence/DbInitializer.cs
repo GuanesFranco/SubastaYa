@@ -45,16 +45,16 @@ public static class DbInitializer
             vendedor.Id, CategoriaTecnologia,
             "Notebook gamer 16GB RAM",
             "Notebook con procesador de última generación, 16GB de RAM y placa dedicada. Usada tres meses, con caja y garantía vigente.",
-            "https://picsum.photos/seed/notebook/600/400",
+            "https://cdn.dummyjson.com/product-images/laptops/apple-macbook-pro-14-inch-space-grey/1.webp",
             precioBase: 30_000m, incrementoMinimo: 1_000m,
             fechaInicio: ahora.AddMinutes(-30), fechaFin: ahora.AddHours(2));
         subastaEstandar.Activar();
 
         var subastaCritica = new Subasta(
             vendedor.Id, CategoriaColeccionables,
-            "Figura de colección edición limitada",
-            "Pieza numerada 47/500, sellada, con certificado de autenticidad. Cierra en minutos.",
-            "https://picsum.photos/seed/figura/600/400",
+            "Reloj de colección edición limitada",
+            "Pieza numerada 47/500, con caja original y certificado de autenticidad. Cierra en minutos.",
+            "https://cdn.dummyjson.com/product-images/mens-watches/brown-leather-belt-watch/1.webp",
             precioBase: 15_000m, incrementoMinimo: 500m,
             fechaInicio: ahora.AddMinutes(-20), fechaFin: ahora.AddSeconds(90));
         subastaCritica.Activar();
@@ -63,24 +63,24 @@ public static class DbInitializer
             vendedor.Id, CategoriaVehiculos,
             "Moto 150cc modelo 2022",
             "Moto con 8.000 km, service oficial al día, papeles en regla. La subasta abre mañana.",
-            "https://picsum.photos/seed/moto/600/400",
+            "https://cdn.dummyjson.com/product-images/motorcycle/generic-motorcycle/1.webp",
             precioBase: 900_000m, incrementoMinimo: 20_000m,
             fechaInicio: ahora.AddHours(24), fechaFin: ahora.AddHours(48));
 
         var subastaVencidaConGanador = new Subasta(
             vendedor.Id, CategoriaIndumentaria,
-            "Campera de cuero talle M",
-            "Campera de cuero genuino, poco uso. Esta subasta ya venció y el worker debería liquidarla.",
-            "https://picsum.photos/seed/campera/600/400",
+            "Camisa a cuadros talle M",
+            "Camisa de algodón a cuadros, poco uso. Esta subasta ya venció y el worker debería liquidarla.",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/man-plaid-shirt/1.webp",
             precioBase: 50_000m, incrementoMinimo: 2_000m,
             fechaInicio: ahora.AddHours(-3), fechaFin: ahora.AddMinutes(-5));
         subastaVencidaConGanador.Activar();
 
         var subastaVencidaDesierta = new Subasta(
             vendedor.Id, CategoriaTecnologia,
-            "Teclado mecánico switches azules",
-            "Teclado retroiluminado, sin uso. Esta subasta ya venció sin ofertas y el worker debería declararla desierta.",
-            "https://picsum.photos/seed/teclado/600/400",
+            "iPad mini 2021 8,3 pulgadas",
+            "Tablet sin uso, en caja cerrada. Esta subasta ya venció sin ofertas y el worker debería declararla desierta.",
+            "https://cdn.dummyjson.com/product-images/tablets/ipad-mini-2021-starlight/1.webp",
             precioBase: 25_000m, incrementoMinimo: 1_000m,
             fechaInicio: ahora.AddHours(-3), fechaFin: ahora.AddMinutes(-10));
         subastaVencidaDesierta.Activar();
