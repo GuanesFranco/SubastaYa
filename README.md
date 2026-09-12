@@ -15,6 +15,10 @@ SignalR · JWT + BCrypt · Swagger · xUnit.
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - **SQL Server Express** con la instancia por defecto `localhost\SQLEXPRESS` (el instalador la
   crea con ese nombre). La conexión usa autenticación de Windows: no hay usuario ni contraseña.
+  El motor y SSMS son instalaciones separadas: para mirar las tablas hace falta instalar SSMS
+  aparte y conectarse a `localhost\SQLEXPRESS` marcando **"Certificado de servidor de
+  confianza"**, porque el certificado de SQL Express es autofirmado.
+- [Node.js 20+](https://nodejs.org) para el frontend.
 
 ## Cómo levantarlo
 
@@ -33,11 +37,16 @@ dotnet user-secrets set "Jwt:Secret" "SubastaYaSuperSecretKey2026!@#VeryLongKey"
 **2. Correr.**
 
 ```bash
-dotnet run --project SubastaYa.Api
+dotnet run --project SubastaYa.Api --launch-profile http
 ```
 
+El `--launch-profile http` **no es opcional si vas a usar el frontend**. Con el perfil `https`
+(el que Visual Studio elige por defecto) cada request del front se come un redirect a
+`https://localhost:7207` antes de que se apliquen las cabeceras de CORS, y el navegador lo
+bloquea — con un error que parece del backend pero es del perfil.
+
 Las migraciones se aplican solas al arrancar, así que la base `SubastaYaDB` se crea en el primer
-`dotnet run`. Swagger queda en **https://localhost:7207/swagger**.
+`dotnet run`. Swagger queda en **http://localhost:5058/swagger**.
 
 Para probar los endpoints protegidos: `POST /api/v1/sessions` para obtener el token, y después
 el botón **Authorize** de Swagger.
@@ -110,3 +119,12 @@ ven ahí:
 React + Vite. Vive fuera de la solución de .NET, se sirve por separado en
 `http://localhost:5173` y consume la API por HTTP. El backend ya tiene CORS habilitado para
 ese origen.
+
+```bash
+cd Frontend
+npm install
+npm run dev
+```
+
+Con el backend corriendo (ver "Cómo levantarlo" arriba), la app queda en
+**http://localhost:5173**.

@@ -57,7 +57,8 @@ public class SubastaRepository : ISubastaRepository
                 s.FechaFin,
                 s.Estado,
                 s.Categoria.Nombre,
-                s.Pujas.Count))
+                s.Pujas.Count,
+                s.MontoFinal))
             .ToListAsync(cancellationToken);
 
         return (items, total);
@@ -113,7 +114,8 @@ public class SubastaRepository : ISubastaRepository
                 s.FechaFin,
                 s.Estado,
                 s.Categoria.Nombre,
-                s.Pujas.Count))
+                s.Pujas.Count,
+                s.MontoFinal))
             .ToListAsync(cancellationToken);
 
         return (items, total);

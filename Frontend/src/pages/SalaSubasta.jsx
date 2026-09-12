@@ -4,6 +4,8 @@ import * as signalR from '@microsoft/signalr';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
+const PUJAS_POR_TANDA = 10;
+
 export default function SalaSubasta() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -11,8 +13,12 @@ export default function SalaSubasta() {
 
   const [subasta, setSubasta] = useState(null);
   const [historial, setHistorial] = useState([]);
+  const [totalPujas, setTotalPujas] = useState(0);
+  const [pujasVisibles, setPujasVisibles] = useState(PUJAS_POR_TANDA);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+  const [heParticipado, setHeParticipado] = useState(false);
   const [loading, setLoading] = useState(true);
-  
+
   // Estado para la puja
   const [montoPuja, setMontoPuja] = useState('');
   const [pujando, setPujando] = useState(false);
@@ -43,14 +49,30 @@ export default function SalaSubasta() {
     }
   };
 
-  const fetchHistorial = async () => {
+  const fetchHistorial = async (cantidad = pujasVisibles) => {
     try {
+      setCargandoHistorial(true);
       // Historial es paginado
-      const res = await api.get(`/auctions/${id}/bids?pageSize=50`);
-      setHistorial(res.data.items || []);
+      const res = await api.get(`/auctions/${id}/bids?page=1&pageSize=${cantidad}`);
+      const items = res.data.items || [];
+
+      setHistorial(items);
+      setTotalPujas(res.data.totalItems || 0);
+
+      if (items.some(p => p.compradorId === user.usuarioId)) {
+        setHeParticipado(true);
+      }
     } catch (err) {
       console.error('Error al cargar historial', err);
+    } finally {
+      setCargandoHistorial(false);
     }
+  };
+
+  const verMasPujas = () => {
+    const siguiente = pujasVisibles + PUJAS_POR_TANDA;
+    setPujasVisibles(siguiente);
+    fetchHistorial(siguiente);
   };
 
   const setupSignalR = async () => {
@@ -151,7 +173,9 @@ export default function SalaSubasta() {
     try {
       // POST devuelve { pujaId, monto, fechaFin, tiempoExtendido }
       const res = await api.post(`/auctions/${id}/bids`, { monto: Number(montoPuja) });
-      
+
+      setHeParticipado(true);
+
       // Actualización optimista local sin esperar SignalR
       setSubasta(prev => ({
         ...prev,
@@ -189,7 +213,7 @@ export default function SalaSubasta() {
 
   // Lógica inteligente de Liderazgo (usando la base de datos y no memoria local)
   const isLiderando = subasta.compradorLiderId === user.usuarioId;
-  const isSuperado = subasta.compradorLiderId !== null && subasta.compradorLiderId !== user.usuarioId && historial.some(h => h.compradorId === user.usuarioId);
+  const isSuperado = heParticipado && subasta.compradorLiderId != null && subasta.compradorLiderId !== user.usuarioId;
   
   const isActiva = subasta.estado === 'Activa';
 
@@ -291,7 +315,9 @@ export default function SalaSubasta() {
           </div>
 
           <div className="glass-panel" style={{ marginTop: '1rem', padding: '1.5rem' }}>
-            <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Historial de Pujas ({historial.length})</h4>
+            <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
+              Historial de Pujas ({historial.length}{totalPujas > historial.length ? ` de ${totalPujas}` : ''})
+            </h4>
             <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
               {historial.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)' }}>No hay pujas aún.</p>
@@ -304,6 +330,21 @@ export default function SalaSubasta() {
                 ))
               )}
             </div>
+
+            {totalPujas > historial.length && (
+              <button
+                type="button"
+                className="btn"
+                onClick={verMasPujas}
+                disabled={cargandoHistorial}
+                style={{
+                  width: '100%', marginTop: '1rem', background: 'transparent',
+                  border: '1px solid var(--glass-border)', color: 'var(--text-muted)'
+                }}
+              >
+                {cargandoHistorial ? 'Cargando...' : `Ver más (${totalPujas - historial.length} restantes)`}
+              </button>
+            )}
           </div>
         </div>
       </div>

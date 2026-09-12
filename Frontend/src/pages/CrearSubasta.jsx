@@ -76,8 +76,6 @@ export default function CrearSubasta() {
         incrementoMinimo: Number(formData.incrementoMinimo)
       };
 
-      if (!payload.urlImagen) delete payload.urlImagen;
-
       const response = await api.post('/auctions', payload);
       
       // La API debería devolver la subasta creada con su ID
