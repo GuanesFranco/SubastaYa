@@ -1,4 +1,5 @@
 using SubastaYa.Domain.Enums;
+using SubastaYa.Domain.Exceptions;
 
 namespace SubastaYa.Domain.Entities;
 
@@ -69,6 +70,11 @@ public class Subasta
 
     public void RegistrarNuevaPuja(Puja puja)
     {
+        if (puja.CompradorId == VendedorId)
+        {
+            throw new DomainException("El vendedor no puede pujar en su propia subasta.");
+        }
+
         PrecioActual = puja.Monto;
         PujaLider = puja;
         Version++;

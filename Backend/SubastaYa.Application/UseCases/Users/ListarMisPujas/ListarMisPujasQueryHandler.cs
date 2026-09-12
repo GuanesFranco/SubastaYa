@@ -4,7 +4,6 @@ using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.Interfaces.Persistence;
 using SubastaYa.Application.Interfaces.Services;
-using SubastaYa.Domain.Enums;
 
 namespace SubastaYa.Application.UseCases.Users.ListarMisPujas;
 
@@ -25,19 +24,12 @@ public class ListarMisPujasQueryHandler : IQueryHandler<ListarMisPujasQuery, Pag
         _logger.LogInformation("Ejecutando ListarMisPujasQueryHandler...");
 
         var (page, pageSize) = Paginacion.Normalizar(query.Page, query.PageSize);
-        var (subastas, total) = await _subastaRepository.ObtenerSubastasDondeParticipoAsync(
+        var (items, total) = await _subastaRepository.ObtenerSubastasDondeParticipoAsync(
             query.CompradorId, page, pageSize, cancellationToken);
 
         return new PaginatedResult<MisPujasDto>
         {
-            Items = subastas.Select(s => new MisPujasDto(
-                s.Id,
-                s.Titulo,
-                s.UrlImagen,
-                s.PrecioActual,
-                s.Estado,
-                s.Estado == EstadoSubasta.Finalizada && s.GanadorUsuarioId == query.CompradorId
-            )).ToList(),
+            Items = items.ToList(),
             TotalItems = total,
             Page = page,
             PageSize = pageSize

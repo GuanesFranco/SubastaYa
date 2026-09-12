@@ -131,7 +131,7 @@ public class SubastaRepository : ISubastaRepository
         await _context.Pujas.AddAsync(puja, cancellationToken);
     }
 
-    public async Task<(IEnumerable<Subasta> Items, int Total)> ObtenerSubastasDondeParticipoAsync(
+    public async Task<(IEnumerable<MisPujasDto> Items, int Total)> ObtenerSubastasDondeParticipoAsync(
         int compradorId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = _context.Subastas
@@ -144,6 +144,13 @@ public class SubastaRepository : ISubastaRepository
             .OrderByDescending(s => s.FechaFin)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(s => new MisPujasDto(
+                s.Id,
+                s.Titulo,
+                s.UrlImagen,
+                s.PrecioActual,
+                s.Estado,
+                s.Estado == EstadoSubasta.Finalizada && s.GanadorUsuarioId == compradorId))
             .ToListAsync(cancellationToken);
 
         return (items, total);
