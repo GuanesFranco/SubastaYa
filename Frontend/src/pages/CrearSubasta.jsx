@@ -32,8 +32,8 @@ export default function CrearSubasta() {
   };
 
   const validateForm = () => {
-    if (!formData.categoriaId || !formData.titulo || !formData.precioBase || !formData.fechaInicio || !formData.fechaFin || !formData.incrementoMinimo) {
-      setError('Por favor, completa todos los campos requeridos (incluyendo el incremento).');
+    if (!formData.categoriaId || !formData.titulo || !formData.precioBase || !formData.fechaInicio || !formData.fechaFin || !formData.incrementoMinimo || !formData.urlImagen) {
+      setError('Por favor, completa todos los campos requeridos (incluyendo la imagen).');
       return false;
     }
 
@@ -129,11 +129,11 @@ export default function CrearSubasta() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">URL de Imagen (Opcional)</label>
+              <label className="form-label">URL de Imagen *</label>
               <input 
                 type="url" name="urlImagen" className="input-field" 
                 value={formData.urlImagen} onChange={handleChange} 
-                placeholder="https://..."
+                placeholder="https://..." required
               />
             </div>
 

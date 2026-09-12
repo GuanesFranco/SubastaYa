@@ -150,7 +150,8 @@ public class SubastaRepository : ISubastaRepository
                 s.UrlImagen,
                 s.PrecioActual,
                 s.Estado,
-                s.Estado == EstadoSubasta.Finalizada && s.GanadorUsuarioId == compradorId))
+                s.Estado == EstadoSubasta.Finalizada && s.GanadorUsuarioId == compradorId,
+                s.FechaFin))
             .ToListAsync(cancellationToken);
 
         return (items, total);
