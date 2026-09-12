@@ -21,10 +21,10 @@ public class DepositCommandHandler : ICommandHandler<DepositCommand, WalletBalan
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<WalletBalanceDto> Handle(DepositCommand command)
+    public async Task<WalletBalanceDto> Handle(DepositCommand command, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Ejecutando DepositCommandHandler...");
-        var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.UsuarioId);
+        var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.UsuarioId, cancellationToken);
         if (billetera == null)
         {
             throw new KeyNotFoundException("Billetera no encontrada.");
@@ -41,8 +41,8 @@ public class DepositCommandHandler : ICommandHandler<DepositCommand, WalletBalan
             Descripcion = "Carga de saldo simulada"
         };
 
-        await _billeteraRepository.AgregarMovimientoAsync(movimiento);
-        await _unitOfWork.SaveChangesAsync();
+        await _billeteraRepository.AgregarMovimientoAsync(movimiento, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new WalletBalanceDto(billetera.SaldoTotal, billetera.SaldoRetenido, billetera.SaldoDisponible);
     }

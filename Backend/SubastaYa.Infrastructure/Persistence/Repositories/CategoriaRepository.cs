@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using SubastaYa.Domain.Entities;
 using SubastaYa.Application.Interfaces.Persistence;
-using SubastaYa.Application.Interfaces.Services;
+using SubastaYa.Domain.Entities;
 
 namespace SubastaYa.Infrastructure.Persistence.Repositories;
 
@@ -14,11 +13,10 @@ public class CategoriaRepository : ICategoriaRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Categoria>> ObtenerTodasAsync()
+    public async Task<IEnumerable<Categoria>> ObtenerTodasAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Categorias
             .AsNoTracking()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 }
-

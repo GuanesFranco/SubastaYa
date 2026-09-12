@@ -23,10 +23,10 @@ public class LoginQueryHandler : IQueryHandler<LoginQuery, AuthResponseDto>
         _jwtProvider = jwtProvider;
     }
 
-    public async Task<AuthResponseDto> Handle(LoginQuery query)
+    public async Task<AuthResponseDto> Handle(LoginQuery query, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Ejecutando LoginQueryHandler...");
-        var usuario = await _usuarioRepository.ObtenerPorEmailAsync(query.Dto.Email);
+        var usuario = await _usuarioRepository.ObtenerPorEmailAsync(query.Dto.Email, cancellationToken);
         if (usuario == null)
         {
             throw new UnauthorizedAccessException("Credenciales incorrectas.");

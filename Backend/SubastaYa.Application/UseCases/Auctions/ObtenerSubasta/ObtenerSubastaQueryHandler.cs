@@ -17,10 +17,10 @@ public class ObtenerSubastaQueryHandler : IQueryHandler<ObtenerSubastaQuery, Sub
         _subastaRepository = subastaRepository;
     }
 
-    public async Task<SubastaDetalleDto> Handle(ObtenerSubastaQuery query)
+    public async Task<SubastaDetalleDto> Handle(ObtenerSubastaQuery query, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Ejecutando ObtenerSubastaQueryHandler...");
-        var subasta = await _subastaRepository.ObtenerDetalleAsync(query.Id);
+        var subasta = await _subastaRepository.ObtenerDetalleAsync(query.Id, cancellationToken);
 
         if (subasta == null)
         {

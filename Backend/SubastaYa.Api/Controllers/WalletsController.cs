@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Api.Extensions;
+using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.DTOs.Wallet;
 using SubastaYa.Application.UseCases.Wallets.Deposit;
 using SubastaYa.Application.UseCases.Wallets.GetWalletBalance;
@@ -12,7 +13,8 @@ namespace SubastaYa.Api.Controllers;
 [Authorize]
 [Route("api/v1/wallets")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+[ProducesErrorResponseType(typeof(ProblemDetails))]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class WalletsController : ControllerBase
 {
     private readonly GetWalletBalanceQueryHandler _balanceHandler;
@@ -34,38 +36,38 @@ public class WalletsController : ControllerBase
 
     [HttpGet("me")]
     [ProducesResponseType(typeof(WalletBalanceDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ObtenerBalance()
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ObtenerBalance(CancellationToken cancellationToken)
     {
         var userId = User.ObtenerUsuarioId();
         _logger.LogInformation("Usuario {UserId} solicitó consultar su balance.", userId);
-        
-        var result = await _balanceHandler.Handle(new GetWalletBalanceQuery(userId));
+
+        var result = await _balanceHandler.Handle(new GetWalletBalanceQuery(userId), cancellationToken);
         return Ok(result);
     }
 
     [HttpPost("me/deposits")]
     [ProducesResponseType(typeof(WalletBalanceDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Depositar([FromBody] DepositoDto dto)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Depositar([FromBody] DepositoDto dto, CancellationToken cancellationToken)
     {
         var userId = User.ObtenerUsuarioId();
         _logger.LogInformation("Usuario {UserId} solicitó depositar {Monto}.", userId, dto.Monto);
-        
-        var result = await _depositHandler.Handle(new DepositCommand(userId, dto.Monto));
+
+        var result = await _depositHandler.Handle(new DepositCommand(userId, dto.Monto), cancellationToken);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
     [HttpGet("me/transactions")]
-    [ProducesResponseType(typeof(IEnumerable<MovimientoDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ObtenerMovimientos()
+    [ProducesResponseType(typeof(PaginatedResult<MovimientoDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ObtenerMovimientos([FromQuery] PaginacionDto paginacion, CancellationToken cancellationToken)
     {
         var userId = User.ObtenerUsuarioId();
         _logger.LogInformation("Usuario {UserId} solicitó su historial de transacciones.", userId);
-        
-        var result = await _transactionsHandler.Handle(new GetWalletTransactionsQuery(userId));
+
+        var query = new GetWalletTransactionsQuery(userId, paginacion.Page, paginacion.PageSize);
+        var result = await _transactionsHandler.Handle(query, cancellationToken);
         return Ok(result);
     }
 }
-

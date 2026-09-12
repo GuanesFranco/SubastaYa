@@ -7,6 +7,7 @@ namespace SubastaYa.Api.Controllers;
 [ApiController]
 [Route("api/v1/sessions")]
 [Produces("application/json")]
+[ProducesErrorResponseType(typeof(ProblemDetails))]
 public class SessionsController : ControllerBase
 {
     private readonly LoginQueryHandler _handler;
@@ -20,14 +21,13 @@ public class SessionsController : ControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Intento de login para email: {Email}", dto.Email);
-        var query = new LoginQuery(dto);
-        var result = await _handler.Handle(query);
+        _logger.LogInformation("Intento de login recibido.");
+
+        var result = await _handler.Handle(new LoginQuery(dto), cancellationToken);
         return Ok(result);
     }
 }
-

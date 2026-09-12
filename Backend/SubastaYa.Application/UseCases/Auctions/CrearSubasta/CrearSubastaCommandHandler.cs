@@ -20,7 +20,7 @@ public class CrearSubastaCommandHandler : ICommandHandler<CrearSubastaCommand, i
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<int> Handle(CrearSubastaCommand command)
+    public async Task<int> Handle(CrearSubastaCommand command, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Ejecutando CrearSubastaCommandHandler...");
         var dto = command.Dto;
@@ -58,7 +58,7 @@ public class CrearSubastaCommandHandler : ICommandHandler<CrearSubastaCommand, i
             throw new DomainException("La fecha de fin debe ser futura.");
         }
 
-        bool categoriaExiste = await _subastaRepository.ExisteCategoriaAsync(dto.CategoriaId);
+        bool categoriaExiste = await _subastaRepository.ExisteCategoriaAsync(dto.CategoriaId, cancellationToken);
         if (!categoriaExiste)
         {
             throw new DomainException("La categoría especificada no existe.");
@@ -76,8 +76,8 @@ public class CrearSubastaCommandHandler : ICommandHandler<CrearSubastaCommand, i
             fechaFin: fechaFin
         );
 
-        await _subastaRepository.AgregarAsync(subasta);
-        await _unitOfWork.SaveChangesAsync();
+        await _subastaRepository.AgregarAsync(subasta, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return subasta.Id;
     }

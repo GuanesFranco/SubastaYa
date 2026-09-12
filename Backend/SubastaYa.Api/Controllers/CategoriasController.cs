@@ -7,6 +7,7 @@ namespace SubastaYa.Api.Controllers;
 [ApiController]
 [Route("api/v1/categories")]
 [Produces("application/json")]
+[ProducesErrorResponseType(typeof(ProblemDetails))]
 public class CategoriasController : ControllerBase
 {
     private readonly ListarCategoriasQueryHandler _handler;
@@ -20,12 +21,11 @@ public class CategoriasController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<CategoriaDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetCategorias()
+    public async Task<IActionResult> GetCategorias(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Consultando la lista completa de categorías.");
-        var query = new ListarCategoriasQuery();
-        var result = await _handler.Handle(query);
+
+        var result = await _handler.Handle(new ListarCategoriasQuery(), cancellationToken);
         return Ok(result);
     }
 }
-

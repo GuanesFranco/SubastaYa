@@ -75,6 +75,18 @@ importar cuándo se clone el repositorio.
 dotnet test
 ```
 
+### Prueba de concurrencia
+
+Con la API levantada, dispara dos pujas idénticas y simultáneas sobre la misma subasta. Una
+responde `201` y la otra `409`, que es el control optimista funcionando:
+
+```bash
+./scripts/prueba-concurrencia.sh
+```
+
+Acepta la URL base y el id de la subasta como argumentos:
+`./scripts/prueba-concurrencia.sh http://localhost:5058/api/v1 1`
+
 ---
 
 ## Notas para consumir la API
@@ -86,6 +98,9 @@ ven ahí:
   application/problem+json`.
 - **Las fechas van siempre en UTC**, con la `Z` explícita (`"2026-09-09T23:00:00Z"`). La
   conversión a hora local es del cliente.
+- **Los listados vienen paginados**, con la forma
+  `{ items, totalItems, page, pageSize, totalPages }`. Se controlan con `?page=` y `?pageSize=`
+  (por defecto 10, máximo 100).
 - **Hub de SignalR en `/hubs/auctions`.** El cliente llama a `JoinAuctionGroup(subastaId)` al
   entrar a la sala y recibe solo los eventos de esa subasta: `BidPlaced`, `AuctionExtended`
   (se aplicó el anti-sniping) y `AuctionClosed` (el worker la cerró, con ganador o desierta).
