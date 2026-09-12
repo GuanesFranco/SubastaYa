@@ -1,99 +1,91 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import * as signalR from '@microsoft/signalr';
-import api, { HUB_URL } from '../services/api';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import useToast from '../hooks/useToast';
 import useCountdown from '../hooks/useCountdown';
+import useLatest from '../hooks/useLatest';
+import useAuctionHub from '../hooks/useAuctionHub';
 import Skeleton from '../components/Skeleton';
 import EstadoError from '../components/EstadoError';
-import CountdownTimer from '../components/CountdownTimer';
-import { formatoARS } from '../utils/formato';
-import { mensajeDeError } from '../utils/errores';
+import EncabezadoSubasta from '../components/sala/EncabezadoSubasta';
+import PanelEstadoParticipante from '../components/sala/PanelEstadoParticipante';
+import PanelCierre from '../components/sala/PanelCierre';
+import ConsolaPuja from '../components/sala/ConsolaPuja';
+import HistorialPujas from '../components/sala/HistorialPujas';
+import { mensajeDeError, TIPOS_ERROR } from '../utils/errores';
+import { montoSugerido as calcularMontoSugerido, normalizarEstado } from '../utils/subastas';
+import './SalaSubasta.css';
 
 const PUJAS_POR_TANDA = 10;
 
-export default function SalaSubasta() {
-  const { id } = useParams();
+function Sala({ subastaId }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
+  const usuarioId = user.usuarioId;
 
   const [subasta, setSubasta] = useState(null);
-  const [historial, setHistorial] = useState([]);
-  const [totalPujas, setTotalPujas] = useState(0);
-  const [pujasVisibles, setPujasVisibles] = useState(PUJAS_POR_TANDA);
-  const [cargandoHistorial, setCargandoHistorial] = useState(false);
-  const [heParticipado, setHeParticipado] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
 
-  const [montoPuja, setMontoPuja] = useState('');
+  const [historial, setHistorial] = useState({ items: [], total: 0 });
+  const [pujasVisibles, setPujasVisibles] = useState(PUJAS_POR_TANDA);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+  const [heParticipado, setHeParticipado] = useState(false);
+
+  const [montoManual, setMontoManual] = useState(null);
   const [pujando, setPujando] = useState(false);
 
-  const connectionRef = useRef(null);
+  const [cierre, setCierre] = useState(null);
+  const [alertaSuperado, setAlertaSuperado] = useState(0);
 
-  const countdown = useCountdown(subasta ? subasta.fechaFin : null, Boolean(subasta) && subasta.estado === 'Activa');
-  const isLastMinute = countdown.ultimoMinuto;
+  const subastaRef = useLatest(subasta);
+  const pujasVisiblesRef = useLatest(pujasVisibles);
 
-  const fetchSubasta = async () => {
+  const fetchSubasta = useCallback(async ({ silencioso = false } = {}) => {
     try {
-      const res = await api.get(`/auctions/${id}`);
+      const res = await api.get(`/auctions/${subastaId}`);
       setSubasta(res.data);
       setErrorCarga(null);
-
-      const montoMinimo = (res.data.precioActual || res.data.precioBase) + res.data.incrementoMinimo;
-      setMontoPuja(montoMinimo);
-
-      fetchHistorial();
     } catch (err) {
-      setErrorCarga(err);
+      if (!silencioso) setErrorCarga(err);
     } finally {
-      setLoading(false);
+      if (!silencioso) setLoading(false);
     }
-  };
+  }, [subastaId]);
 
-  const fetchHistorial = async (cantidad = pujasVisibles) => {
+  const fetchHistorial = useCallback(async (cantidad) => {
     try {
-      setCargandoHistorial(true);
-      const res = await api.get(`/auctions/${id}/bids?page=1&pageSize=${cantidad}`);
+      const res = await api.get(`/auctions/${subastaId}/bids`, { params: { page: 1, pageSize: cantidad } });
       const items = res.data.items || [];
-
-      setHistorial(items);
-      setTotalPujas(res.data.totalItems || 0);
-
-      if (items.some(p => p.compradorId === user.usuarioId)) {
-        setHeParticipado(true);
-      }
+      setHistorial({ items, total: res.data.totalItems || 0 });
+      if (items.some((p) => p.compradorId === usuarioId)) setHeParticipado(true);
     } catch (err) {
       console.error('Error al cargar historial', err);
     } finally {
       setCargandoHistorial(false);
     }
-  };
+  }, [subastaId, usuarioId]);
 
-  const verMasPujas = () => {
-    const siguiente = pujasVisibles + PUJAS_POR_TANDA;
-    setPujasVisibles(siguiente);
-    fetchHistorial(siguiente);
-  };
-
-  const reintentarCarga = () => {
-    setLoading(true);
-    setErrorCarga(null);
+  const cargarRef = useLatest(() => {
     fetchSubasta();
-  };
+    fetchHistorial(PUJAS_POR_TANDA);
+  });
 
-  const setupSignalR = async () => {
-    const conn = new signalR.HubConnectionBuilder()
-      .withUrl(HUB_URL, {
-        accessTokenFactory: () => localStorage.getItem('token')
-      })
-      .withAutomaticReconnect()
-      .build();
+  useEffect(() => {
+    const cargar = cargarRef.current;
+    Promise.resolve().then(cargar);
+  }, [subastaId, cargarRef]);
 
-    conn.on('BidPlaced', (evento) => {
-      setSubasta(prev => {
+  const { estadoConexion, reconectar } = useAuctionHub(subastaId, {
+    onBidPlaced: (evento) => {
+      const previa = subastaRef.current;
+      const meSuperaron = previa
+        && previa.compradorLiderId === usuarioId
+        && evento.compradorId !== usuarioId;
+
+      setSubasta((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
@@ -104,68 +96,74 @@ export default function SalaSubasta() {
         };
       });
 
-      fetchHistorial();
-    });
+      if (meSuperaron) {
+        setAlertaSuperado((k) => k + 1);
+        toast.error('Te superaron. Hacé una nueva oferta para volver a liderar.');
+      }
 
-    conn.on('AuctionExtended', () => {
-      toast.aviso('¡El tiempo se extendió por nuevas ofertas!');
-    });
-
-    conn.on('AuctionClosed', (evento) => {
-      setSubasta(prev => ({ ...prev, estado: evento.estado }));
-      toast.exito(`¡Subasta finalizada! Estado: ${evento.estado}`);
-    });
-
-    try {
-      await conn.start();
-      await conn.invoke('JoinAuctionGroup', Number(id));
-      connectionRef.current = conn;
-    } catch (err) {
-      console.error('Error SignalR:', err);
+      fetchHistorial(pujasVisiblesRef.current);
+    },
+    onAuctionExtended: (evento) => {
+      setSubasta((prev) => (prev ? { ...prev, fechaFin: evento.nuevaFechaFin } : prev));
+      toast.aviso('Se sumó tiempo por una oferta en el último minuto.');
+    },
+    onAuctionClosed: (evento) => {
+      const estado = normalizarEstado(evento.estado);
+      setCierre({ estado, ganadorUsuarioId: evento.ganadorUsuarioId, montoFinal: evento.montoFinal });
+      setSubasta((prev) => (prev ? { ...prev, estado } : prev));
+      if (evento.ganadorUsuarioId === usuarioId) toast.exito('¡Ganaste la subasta!');
+      else toast.info('La subasta finalizó.');
+      fetchSubasta({ silencioso: true });
+    },
+    onReconnected: () => {
+      fetchSubasta({ silencioso: true });
+      fetchHistorial(pujasVisiblesRef.current);
     }
+  });
+
+  const countdown = useCountdown(subasta ? subasta.fechaFin : null, Boolean(subasta) && subasta.estado === 'Activa');
+
+  const verMasPujas = () => {
+    const siguiente = pujasVisibles + PUJAS_POR_TANDA;
+    setPujasVisibles(siguiente);
+    setCargandoHistorial(true);
+    fetchHistorial(siguiente);
   };
 
-  useEffect(() => {
+  const reintentarCarga = () => {
+    setLoading(true);
+    setErrorCarga(null);
     fetchSubasta();
-    setupSignalR();
-
-    return () => {
-      if (connectionRef.current) {
-        connectionRef.current.invoke('LeaveAuctionGroup', Number(id))
-          .catch(console.error)
-          .finally(() => {
-            connectionRef.current.stop();
-          });
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    fetchHistorial(PUJAS_POR_TANDA);
+  };
 
   const handlePujar = async (e) => {
     e.preventDefault();
+    if (!subasta) return;
+    const monto = Number(montoManual ?? calcularMontoSugerido(subasta));
+
     setPujando(true);
     try {
-      const res = await api.post(`/auctions/${id}/bids`, { monto: Number(montoPuja) });
+      const res = await api.post(`/auctions/${subastaId}/bids`, { monto });
 
       setHeParticipado(true);
-
-      setSubasta(prev => ({
+      setMontoManual(null);
+      setSubasta((prev) => ({
         ...prev,
         precioActual: res.data.monto,
         pujaLiderId: res.data.pujaId,
-        compradorLiderId: user.usuarioId,
+        compradorLiderId: usuarioId,
         fechaFin: res.data.fechaFin
       }));
 
-      setMontoPuja(res.data.monto + subasta.incrementoMinimo);
-
-      if (res.data.tiempoExtendido) {
-        toast.aviso('Tu oferta extendió el tiempo de la subasta.');
-      } else {
-        toast.exito('Oferta enviada. Ahora vas ganando.');
-      }
+      if (res.data.tiempoExtendido) toast.aviso('Tu oferta extendió el tiempo de la subasta.');
+      else toast.exito('Oferta enviada. Ahora vas ganando.');
     } catch (err) {
       toast.error(mensajeDeError(err));
+      if (err.kind === TIPOS_ERROR.CONFLICTO || err.kind === TIPOS_ERROR.NEGOCIO) {
+        fetchSubasta({ silencioso: true });
+        fetchHistorial(pujasVisiblesRef.current);
+      }
     } finally {
       setPujando(false);
     }
@@ -173,148 +171,106 @@ export default function SalaSubasta() {
 
   if (loading) {
     return (
-      <div className="layout-container">
+      <div className="layout-container sala">
         <Skeleton variante="panel" lineas={4} etiqueta="Cargando subasta" />
       </div>
     );
   }
 
   if (errorCarga || !subasta) {
+    const noExiste = errorCarga && errorCarga.kind === TIPOS_ERROR.NO_ENCONTRADO;
     return (
-      <div className="layout-container">
+      <div className="layout-container sala">
         <EstadoError
           error={errorCarga}
-          titulo={errorCarga && errorCarga.kind === 'noEncontrado' ? 'Esta subasta no existe' : undefined}
-          onReintentar={errorCarga && errorCarga.kind !== 'noEncontrado' ? reintentarCarga : null}
-          accion={<button type="button" className="btn" onClick={() => navigate('/')} style={{ background: 'rgba(255,255,255,0.1)' }}>Volver al catálogo</button>}
+          titulo={noExiste ? 'Esta subasta no existe' : undefined}
+          onReintentar={noExiste ? null : reintentarCarga}
+          accion={<button type="button" className="btn btn-ghost" onClick={() => navigate('/')}>Volver al catálogo</button>}
         />
       </div>
     );
   }
 
-  const isLiderando = subasta.compradorLiderId === user.usuarioId;
-  const isSuperado = heParticipado && subasta.compradorLiderId != null && subasta.compradorLiderId !== user.usuarioId;
-  const isActiva = subasta.estado === 'Activa';
-  const esVendedor = subasta.vendedorId === user.usuarioId;
-  const montoMinimo = (subasta.precioActual || subasta.precioBase) + subasta.incrementoMinimo;
+  const activa = subasta.estado === 'Activa';
+  const esVendedor = subasta.vendedorId === usuarioId;
+  const liderando = subasta.compradorLiderId != null && subasta.compradorLiderId === usuarioId;
+  const superado = heParticipado && subasta.compradorLiderId != null && !liderando;
+  const montoSugerido = calcularMontoSugerido(subasta);
+  const montoPuja = montoManual ?? montoSugerido;
+
+  let estadoParticipante = 'sinOfertar';
+  if (esVendedor) estadoParticipante = 'vendedor';
+  else if (liderando) estadoParticipante = 'liderando';
+  else if (superado) estadoParticipante = 'superado';
+
+  let cierreEfectivo = cierre;
+  if (!cierreEfectivo && !activa) {
+    cierreEfectivo = {
+      estado: subasta.estado,
+      ganadorUsuarioId: subasta.compradorLiderId,
+      montoFinal: subasta.compradorLiderId != null ? subasta.precioActual : null,
+      fechaInicio: subasta.fechaInicio
+    };
+  }
 
   return (
-    <div className="layout-container">
-      <button className="btn" onClick={() => navigate(-1)} style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.1)' }}>← Volver</button>
+    <div className="layout-container sala">
+      <button type="button" className="btn btn-ghost btn-sm sala__volver" onClick={() => navigate(-1)}>
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M12 5l-5 5 5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Volver
+      </button>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-        <div className="glass-panel" style={{ position: 'relative', overflow: 'hidden' }}>
-          {isLastMinute && isActiva && (
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-              border: '4px solid var(--danger)', pointerEvents: 'none',
-              animation: 'pulse 1s infinite'
-            }} />
-          )}
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{subasta.categoriaNombre || 'General'}</span>
-            <span style={{
-              background: isActiva ? 'var(--success)' : 'var(--text-muted)',
-              color: 'white', padding: '0.2rem 1rem', borderRadius: '1rem', fontWeight: 'bold'
-            }}>
-              {subasta.estado}
-            </span>
-          </div>
-
-          <h1 style={{ marginTop: '1rem', fontSize: '2.5rem' }}>{subasta.titulo}</h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '1rem', fontSize: '1.1rem' }}>{subasta.descripcion}</p>
-
-          <div style={{ marginTop: '3rem', display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
-            <div>
-              <p style={{ color: 'var(--text-muted)' }}>Precio actual</p>
-              <h2 className="tabular" style={{ fontSize: '3rem', color: isActiva ? 'var(--success)' : 'var(--text-main)' }}>
-                {formatoARS(subasta.precioActual || subasta.precioBase)}
-              </h2>
-            </div>
-            <div>
-              <p style={{ color: 'var(--text-muted)' }}>Tiempo restante</p>
-              <h2 style={{ fontSize: '3rem' }}>
-                <CountdownTimer fechaFin={subasta.fechaFin} estado={subasta.estado} tamano="lg" conIcono={false} />
-              </h2>
-            </div>
-          </div>
+      <div className="sala__grid">
+        <div className="sala__principal">
+          <EncabezadoSubasta
+            subasta={subasta}
+            ultimoMinuto={countdown.ultimoMinuto}
+            estadoConexion={estadoConexion}
+            onReconectar={reconectar}
+          />
         </div>
 
-        <div>
-          {isLiderando && (
-            <div className="glass-panel" style={{ background: 'var(--success-bg)', borderColor: 'var(--success)', textAlign: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ color: 'var(--success)', margin: 0 }}>¡Vas ganando! 🏆</h2>
-            </div>
+        <div className="sala__lateral">
+          <PanelEstadoParticipante
+            estado={estadoParticipante}
+            montoSugerido={montoSugerido}
+            precioActual={subasta.precioActual}
+            activa={activa}
+            alerta={alertaSuperado}
+          />
+
+          {cierreEfectivo ? (
+            <PanelCierre cierre={cierreEfectivo} usuarioId={usuarioId} esVendedor={esVendedor} />
+          ) : (
+            !esVendedor && (
+              <ConsolaPuja
+                monto={montoPuja}
+                montoSugerido={montoSugerido}
+                onMontoChange={setMontoManual}
+                onSubmit={handlePujar}
+                enviando={pujando}
+              />
+            )
           )}
-          {isSuperado && (
-            <div className="glass-panel" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger)', textAlign: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ color: 'var(--danger)', margin: 0 }}>¡Te superaron! ⚠️</h2>
-            </div>
-          )}
 
-          <div className="glass-panel">
-            <h3 style={{ marginBottom: '1.5rem' }}>Realizar oferta</h3>
-
-            <form onSubmit={handlePujar}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="monto-puja">Monto a ofertar (mínimo sugerido: {formatoARS(montoMinimo)})</label>
-                <input
-                  id="monto-puja"
-                  type="number"
-                  className="input-field tabular"
-                  style={{ fontSize: '1.5rem', textAlign: 'center' }}
-                  value={montoPuja}
-                  onChange={(e) => setMontoPuja(e.target.value)}
-                  disabled={!isActiva || pujando || esVendedor}
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ width: '100%', fontSize: '1.2rem', padding: '1rem' }}
-                disabled={!isActiva || pujando || esVendedor}
-              >
-                {pujando ? 'Enviando...' : (esVendedor ? 'Sos el vendedor' : 'Ofertar ahora')}
-              </button>
-            </form>
-          </div>
-
-          <div className="glass-panel" style={{ marginTop: '1rem', padding: '1.5rem' }}>
-            <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
-              Historial de ofertas ({historial.length}{totalPujas > historial.length ? ` de ${totalPujas}` : ''})
-            </h4>
-            <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
-              {historial.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)' }}>Todavía no hay ofertas. Podés ser el primero.</p>
-              ) : (
-                historial.map(puja => (
-                  <div key={puja.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>{puja.compradorNombre}</span>
-                    <span className="tabular" style={{ fontWeight: 'bold' }}>{formatoARS(puja.monto)}</span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {totalPujas > historial.length && (
-              <button
-                type="button"
-                className="btn"
-                onClick={verMasPujas}
-                disabled={cargandoHistorial}
-                style={{
-                  width: '100%', marginTop: '1rem', background: 'transparent',
-                  border: '1px solid var(--glass-border)', color: 'var(--text-muted)'
-                }}
-              >
-                {cargandoHistorial ? 'Cargando...' : `Ver más (${totalPujas - historial.length} restantes)`}
-              </button>
-            )}
-          </div>
+          <HistorialPujas
+            items={historial.items}
+            total={historial.total}
+            cargando={cargandoHistorial}
+            onVerMas={verMasPujas}
+            usuarioId={usuarioId}
+            pujaLiderId={subasta.pujaLiderId}
+          />
         </div>
       </div>
     </div>
   );
+}
+
+export default function SalaSubasta() {
+  const { id } = useParams();
+  const subastaId = Number(id);
+  return <Sala key={subastaId} subastaId={subastaId} />;
 }
