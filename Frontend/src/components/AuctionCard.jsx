@@ -1,18 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { formatoARS, plural } from '../utils/formato';
 
 export default function AuctionCard({ auction }) {
-  // Manejo de enums como strings
   const isActive = auction.estado === 'Activa';
   const isScheduled = auction.estado === 'Programada';
-  
-  // Colores dinámicos
+
   const statusColor = isActive ? 'var(--success)' : (isScheduled ? 'var(--warning)' : 'var(--text-muted)');
-  
-  const formatter = new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-  });
 
   const [tiempoRestante, setTiempoRestante] = useState('');
 
@@ -61,7 +55,7 @@ export default function AuctionCard({ auction }) {
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            {auction.cantidadPujas !== undefined ? `${auction.cantidadPujas} oferta(s)` : ''}
+            {auction.cantidadPujas !== undefined ? plural(auction.cantidadPujas, 'oferta', 'ofertas', 'Sin ofertas') : ''}
             {tiempoRestante && <span style={{ marginLeft: '1rem', color: 'var(--text-main)' }}>⏱ {tiempoRestante}</span>}
           </p>
           {auction.esGanador && (
@@ -74,8 +68,8 @@ export default function AuctionCard({ auction }) {
         <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Precio Actual</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isActive ? 'var(--success)' : 'var(--text-main)' }}>
-              {formatter.format(auction.precioActual || auction.precioBase)}
+            <p className="tabular" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isActive ? 'var(--success)' : 'var(--text-main)' }}>
+              {formatoARS(auction.precioActual || auction.precioBase)}
             </p>
           </div>
           

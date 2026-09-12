@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as signalR from '@microsoft/signalr';
-import api from '../services/api';
+import api, { HUB_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import useToast from '../hooks/useToast';
+import Skeleton from '../components/Skeleton';
+import EstadoError from '../components/EstadoError';
+import { formatoARS } from '../utils/formato';
+import { mensajeDeError } from '../utils/errores';
 
 const PUJAS_POR_TANDA = 10;
 
@@ -10,6 +15,7 @@ export default function SalaSubasta() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [subasta, setSubasta] = useState(null);
   const [historial, setHistorial] = useState([]);
@@ -18,16 +24,14 @@ export default function SalaSubasta() {
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
   const [heParticipado, setHeParticipado] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [errorCarga, setErrorCarga] = useState(null);
 
-  // Estado para la puja
   const [montoPuja, setMontoPuja] = useState('');
   const [pujando, setPujando] = useState(false);
 
-  // Estados visuales (Toasts y Countdown)
   const [tiempoRestante, setTiempoRestante] = useState('');
   const [isLastMinute, setIsLastMinute] = useState(false);
-  const [toast, setToast] = useState({ show: false, msg: '', type: '' });
-  
+
   const connectionRef = useRef(null);
   const fechaFinRef = useRef(null);
 
@@ -35,15 +39,15 @@ export default function SalaSubasta() {
     try {
       const res = await api.get(`/auctions/${id}`);
       setSubasta(res.data);
+      setErrorCarga(null);
       fechaFinRef.current = new Date(res.data.fechaFin);
-      
-      // Auto-sugerencia
+
       const montoMinimo = (res.data.precioActual || res.data.precioBase) + res.data.incrementoMinimo;
       setMontoPuja(montoMinimo);
-      
+
       fetchHistorial();
     } catch (err) {
-      showToast(err.message || 'Error al cargar la subasta', 'error');
+      setErrorCarga(err);
     } finally {
       setLoading(false);
     }
@@ -52,7 +56,6 @@ export default function SalaSubasta() {
   const fetchHistorial = async (cantidad = pujasVisibles) => {
     try {
       setCargandoHistorial(true);
-      // Historial es paginado
       const res = await api.get(`/auctions/${id}/bids?page=1&pageSize=${cantidad}`);
       const items = res.data.items || [];
 
@@ -75,19 +78,21 @@ export default function SalaSubasta() {
     fetchHistorial(siguiente);
   };
 
+  const reintentarCarga = () => {
+    setLoading(true);
+    setErrorCarga(null);
+    fetchSubasta();
+  };
+
   const setupSignalR = async () => {
-    // Usamos el host de la API para el hub
-    const hubUrl = api.defaults.baseURL.replace('/api/v1', '') + '/hubs/auctions';
-    
     const conn = new signalR.HubConnectionBuilder()
-      .withUrl(hubUrl, {
+      .withUrl(HUB_URL, {
         accessTokenFactory: () => localStorage.getItem('token')
       })
       .withAutomaticReconnect()
       .build();
 
     conn.on('BidPlaced', (evento) => {
-      // payload = { subastaId, pujaId, monto, fechaPuja, fechaFin, compradorId }
       setSubasta(prev => {
         if (!prev) return prev;
         return {
@@ -95,22 +100,21 @@ export default function SalaSubasta() {
           precioActual: evento.monto,
           pujaLiderId: evento.pujaId,
           compradorLiderId: evento.compradorId,
-          fechaFin: evento.fechaFin // Actualizar por si hubo anti-sniping
+          fechaFin: evento.fechaFin
         };
       });
       fechaFinRef.current = new Date(evento.fechaFin);
-      
-      // Refetch de historial para obtener los nombres anonimizados
+
       fetchHistorial();
     });
 
     conn.on('AuctionExtended', () => {
-      showToast('¡El tiempo se ha extendido por nuevas ofertas!', 'warning');
+      toast.aviso('¡El tiempo se extendió por nuevas ofertas!');
     });
 
     conn.on('AuctionClosed', (evento) => {
       setSubasta(prev => ({ ...prev, estado: evento.estado }));
-      showToast(`¡Subasta Finalizada! Estado: ${evento.estado}`, 'success');
+      toast.exito(`¡Subasta finalizada! Estado: ${evento.estado}`);
     });
 
     try {
@@ -138,11 +142,10 @@ export default function SalaSubasta() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Lógica de Countdown (Calculando siempre contra Date.now() en UTC implícito)
   useEffect(() => {
     const interval = setInterval(() => {
       if (!fechaFinRef.current || subasta?.estado !== 'Activa') return;
-      
+
       const diff = fechaFinRef.current.getTime() - Date.now();
       if (diff <= 0) {
         setTiempoRestante('Finalizando...');
@@ -150,7 +153,7 @@ export default function SalaSubasta() {
         return;
       }
 
-      setIsLastMinute(diff < 60000); // Alerta visual en el último minuto
+      setIsLastMinute(diff < 60000);
 
       const horas = Math.floor(diff / (1000 * 60 * 60));
       const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -162,21 +165,14 @@ export default function SalaSubasta() {
     return () => clearInterval(interval);
   }, [subasta?.estado]);
 
-  const showToast = (msg, type) => {
-    setToast({ show: true, msg, type });
-    setTimeout(() => setToast({ show: false, msg: '', type: '' }), 5000);
-  };
-
   const handlePujar = async (e) => {
     e.preventDefault();
     setPujando(true);
     try {
-      // POST devuelve { pujaId, monto, fechaFin, tiempoExtendido }
       const res = await api.post(`/auctions/${id}/bids`, { monto: Number(montoPuja) });
 
       setHeParticipado(true);
 
-      // Actualización optimista local sin esperar SignalR
       setSubasta(prev => ({
         ...prev,
         precioActual: res.data.monto,
@@ -186,55 +182,52 @@ export default function SalaSubasta() {
       }));
       fechaFinRef.current = new Date(res.data.fechaFin);
 
-      // Auto-sugerencia para la próxima
       setMontoPuja(res.data.monto + subasta.incrementoMinimo);
 
       if (res.data.tiempoExtendido) {
-        showToast('¡Has extendido el tiempo de la subasta!', 'warning');
+        toast.aviso('Tu oferta extendió el tiempo de la subasta.');
       } else {
-        showToast('¡Oferta enviada exitosamente!', 'success');
+        toast.exito('Oferta enviada. Ahora vas ganando.');
       }
-
     } catch (err) {
-      if (err.status === 409 || err.message?.toLowerCase().includes('concurrencia')) {
-        showToast('Otra oferta superó la tuya, actualizá y reintentá.', 'error');
-      } else {
-        showToast(err.message || 'Error al enviar la oferta.', 'error');
-      }
+      toast.error(mensajeDeError(err));
     } finally {
       setPujando(false);
     }
   };
 
-  const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+  if (loading) {
+    return (
+      <div className="layout-container">
+        <Skeleton variante="panel" lineas={4} etiqueta="Cargando subasta" />
+      </div>
+    );
+  }
 
-  if (loading) return <div className="layout-container" style={{ textAlign: 'center' }}>Cargando subasta...</div>;
-  if (!subasta) return <div className="layout-container">Subasta no encontrada.</div>;
+  if (errorCarga || !subasta) {
+    return (
+      <div className="layout-container">
+        <EstadoError
+          error={errorCarga}
+          titulo={errorCarga && errorCarga.kind === 'noEncontrado' ? 'Esta subasta no existe' : undefined}
+          onReintentar={errorCarga && errorCarga.kind !== 'noEncontrado' ? reintentarCarga : null}
+          accion={<button type="button" className="btn" onClick={() => navigate('/')} style={{ background: 'rgba(255,255,255,0.1)' }}>Volver al catálogo</button>}
+        />
+      </div>
+    );
+  }
 
-  // Lógica inteligente de Liderazgo (usando la base de datos y no memoria local)
   const isLiderando = subasta.compradorLiderId === user.usuarioId;
   const isSuperado = heParticipado && subasta.compradorLiderId != null && subasta.compradorLiderId !== user.usuarioId;
-  
   const isActiva = subasta.estado === 'Activa';
+  const esVendedor = subasta.vendedorId === user.usuarioId;
+  const montoMinimo = (subasta.precioActual || subasta.precioBase) + subasta.incrementoMinimo;
 
   return (
     <div className="layout-container">
-      {/* Sistema de Toasts Nativos CSS */}
-      {toast.show && (
-        <div style={{
-          position: 'fixed', top: '20px', right: '20px', zIndex: 1000,
-          background: toast.type === 'error' ? 'var(--danger)' : toast.type === 'warning' ? 'var(--warning)' : 'var(--success)',
-          color: 'white', padding: '1rem 2rem', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-          animation: 'slideIn 0.3s ease-out'
-        }}>
-          {toast.msg}
-        </div>
-      )}
-
       <button className="btn" onClick={() => navigate(-1)} style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.1)' }}>← Volver</button>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-        {/* Columna Izquierda: Detalles */}
         <div className="glass-panel" style={{ position: 'relative', overflow: 'hidden' }}>
           {isLastMinute && isActiva && (
             <div style={{
@@ -246,86 +239,85 @@ export default function SalaSubasta() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{subasta.categoriaNombre || 'General'}</span>
-            <span style={{ 
-              background: isActiva ? 'var(--success)' : 'var(--text-muted)', 
-              color: 'white', padding: '0.2rem 1rem', borderRadius: '1rem', fontWeight: 'bold' 
+            <span style={{
+              background: isActiva ? 'var(--success)' : 'var(--text-muted)',
+              color: 'white', padding: '0.2rem 1rem', borderRadius: '1rem', fontWeight: 'bold'
             }}>
               {subasta.estado}
             </span>
           </div>
-          
+
           <h1 style={{ marginTop: '1rem', fontSize: '2.5rem' }}>{subasta.titulo}</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '1rem', fontSize: '1.1rem' }}>{subasta.descripcion}</p>
 
-          <div style={{ marginTop: '3rem', display: 'flex', gap: '3rem' }}>
+          <div style={{ marginTop: '3rem', display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
             <div>
-              <p style={{ color: 'var(--text-muted)' }}>Precio Actual</p>
-              <h2 style={{ fontSize: '3rem', color: isActiva ? 'var(--success)' : 'var(--text-main)' }}>
-                {formatter.format(subasta.precioActual || subasta.precioBase)}
+              <p style={{ color: 'var(--text-muted)' }}>Precio actual</p>
+              <h2 className="tabular" style={{ fontSize: '3rem', color: isActiva ? 'var(--success)' : 'var(--text-main)' }}>
+                {formatoARS(subasta.precioActual || subasta.precioBase)}
               </h2>
             </div>
             <div>
-              <p style={{ color: 'var(--text-muted)' }}>Tiempo Restante</p>
-              <h2 style={{ fontSize: '3rem', color: isLastMinute ? 'var(--danger)' : 'var(--text-main)' }}>
+              <p style={{ color: 'var(--text-muted)' }}>Tiempo restante</p>
+              <h2 className="tabular" style={{ fontSize: '3rem', color: isLastMinute ? 'var(--danger)' : 'var(--text-main)' }}>
                 {isActiva ? tiempoRestante : '--:--:--'}
               </h2>
             </div>
           </div>
         </div>
 
-        {/* Columna Derecha: Panel de Puja */}
         <div>
-          {/* Indicador Gigante Liderando/Superado */}
           {isLiderando && (
-            <div className="glass-panel" style={{ background: 'rgba(16, 185, 129, 0.2)', borderColor: 'var(--success)', textAlign: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ color: 'var(--success)', margin: 0 }}>¡Estás Liderando! 🏆</h2>
+            <div className="glass-panel" style={{ background: 'var(--success-bg)', borderColor: 'var(--success)', textAlign: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ color: 'var(--success)', margin: 0 }}>¡Vas ganando! 🏆</h2>
             </div>
           )}
           {isSuperado && (
-            <div className="glass-panel" style={{ background: 'rgba(239, 68, 68, 0.2)', borderColor: 'var(--danger)', textAlign: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ color: 'var(--danger)', margin: 0 }}>¡Te han Superado! ⚠️</h2>
+            <div className="glass-panel" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger)', textAlign: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ color: 'var(--danger)', margin: 0 }}>¡Te superaron! ⚠️</h2>
             </div>
           )}
 
           <div className="glass-panel">
-            <h3 style={{ marginBottom: '1.5rem' }}>Realizar Oferta</h3>
-            
+            <h3 style={{ marginBottom: '1.5rem' }}>Realizar oferta</h3>
+
             <form onSubmit={handlePujar}>
               <div className="form-group">
-                <label className="form-label">Monto a ofertar (Mínimo sugerido: {formatter.format((subasta.precioActual || subasta.precioBase) + subasta.incrementoMinimo)})</label>
-                <input 
-                  type="number" 
-                  className="input-field" 
+                <label className="form-label" htmlFor="monto-puja">Monto a ofertar (mínimo sugerido: {formatoARS(montoMinimo)})</label>
+                <input
+                  id="monto-puja"
+                  type="number"
+                  className="input-field tabular"
                   style={{ fontSize: '1.5rem', textAlign: 'center' }}
-                  value={montoPuja} 
-                  onChange={(e) => setMontoPuja(e.target.value)} 
-                  disabled={!isActiva || pujando || subasta.vendedorId === user.usuarioId}
+                  value={montoPuja}
+                  onChange={(e) => setMontoPuja(e.target.value)}
+                  disabled={!isActiva || pujando || esVendedor}
                   required
                 />
               </div>
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
-                style={{ width: '100%', fontSize: '1.2rem', padding: '1rem' }} 
-                disabled={!isActiva || pujando || subasta.vendedorId === user.usuarioId}
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ width: '100%', fontSize: '1.2rem', padding: '1rem' }}
+                disabled={!isActiva || pujando || esVendedor}
               >
-                {pujando ? 'Enviando...' : (subasta.vendedorId === user.usuarioId ? 'Eres el Vendedor' : 'Pujar Ahora')}
+                {pujando ? 'Enviando...' : (esVendedor ? 'Sos el vendedor' : 'Ofertar ahora')}
               </button>
             </form>
           </div>
 
           <div className="glass-panel" style={{ marginTop: '1rem', padding: '1.5rem' }}>
             <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
-              Historial de Pujas ({historial.length}{totalPujas > historial.length ? ` de ${totalPujas}` : ''})
+              Historial de ofertas ({historial.length}{totalPujas > historial.length ? ` de ${totalPujas}` : ''})
             </h4>
             <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
               {historial.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)' }}>No hay pujas aún.</p>
+                <p style={{ color: 'var(--text-muted)' }}>Todavía no hay ofertas. Podés ser el primero.</p>
               ) : (
                 historial.map(puja => (
                   <div key={puja.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)' }}>
                     <span style={{ color: 'var(--text-muted)' }}>{puja.compradorNombre}</span>
-                    <span style={{ fontWeight: 'bold' }}>{formatter.format(puja.monto)}</span>
+                    <span className="tabular" style={{ fontWeight: 'bold' }}>{formatoARS(puja.monto)}</span>
                   </div>
                 ))
               )}

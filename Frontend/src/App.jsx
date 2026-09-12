@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import ToastProvider from './components/ToastProvider';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -9,14 +10,12 @@ import Billetera from './pages/Billetera';
 import SalaSubasta from './pages/SalaSubasta';
 import MisActividades from './pages/MisActividades';
 
-// Componente para proteger rutas que requieren estar logueado
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" />;
   return children;
 };
 
-// Componente para evitar que un usuario logueado entre al Login
 const GuestRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   if (isAuthenticated) return <Navigate to="/" />;
@@ -54,7 +53,6 @@ function AppRoutes() {
             <MisActividades />
           </ProtectedRoute>
         } />
-        {/* Agregaremos más rutas a medida que avancemos */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
@@ -64,9 +62,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <ToastProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }
