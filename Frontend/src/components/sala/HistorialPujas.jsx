@@ -1,6 +1,8 @@
 import React from 'react';
 import { formatoARS, plural } from '../../utils/formato';
 
+const hora = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit' });
+
 export default function HistorialPujas({ items, total, cargando, onVerMas, usuarioId, pujaLiderId }) {
   const restantes = Math.max(0, total - items.length);
 
@@ -29,7 +31,8 @@ export default function HistorialPujas({ items, total, cargando, onVerMas, usuar
                       <path d="M3 14l2-7 3.5 3.5L10 5l1.5 5.5L15 7l2 7z" fill="currentColor" />
                     </svg>
                   )}
-                  {esPropia ? 'Vos' : puja.compradorNombre}
+                  <span className="historial__nombre">{esPropia ? 'Vos' : puja.compradorNombre}</span>
+                  {puja.fecha && <span className="historial__hora">{hora.format(new Date(puja.fecha))}</span>}
                 </span>
                 <span className="historial__monto">{formatoARS(puja.monto)}</span>
               </li>

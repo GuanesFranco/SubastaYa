@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import AuctionCard from '../components/AuctionCard';
@@ -7,15 +7,17 @@ import Skeleton from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 import EstadoError from '../components/EstadoError';
 import useRecurso from '../hooks/useRecurso';
-import { formatoARS } from '../utils/formato';
+import useTitulo from '../hooks/useTitulo';
+import { formatoARS, plural } from '../utils/formato';
+import './MisActividades.css';
 
 const PAGE_SIZE = 12;
 const TOPE_METRICAS = 100;
 
-const TABS = {
-  pujas: { recurso: '/users/me/bids', label: 'Subastas donde participé' },
-  publicaciones: { recurso: '/users/me/auctions', label: 'Mis publicaciones' }
-};
+const TABS = [
+  { id: 'pujas', recurso: '/users/me/bids', label: 'Donde participé' },
+  { id: 'publicaciones', recurso: '/users/me/auctions', label: 'Mis publicaciones' }
+];
 
 function mapearPujaACard(puja) {
   return {
@@ -30,13 +32,17 @@ function mapearPujaACard(puja) {
 }
 
 export default function MisActividades() {
+  useTitulo('Mis actividades');
+
   const [activeTab, setActiveTab] = useState('pujas');
   const [paginas, setPaginas] = useState({ pujas: 1, publicaciones: 1 });
+  const tabsRef = useRef([]);
 
+  const tab = TABS.find((t) => t.id === activeTab) || TABS[0];
   const pageActual = paginas[activeTab];
 
   const actividades = useRecurso(async (signal) => {
-    const res = await api.get(TABS[activeTab].recurso, { params: { page: pageActual, pageSize: PAGE_SIZE }, signal });
+    const res = await api.get(tab.recurso, { params: { page: pageActual, pageSize: PAGE_SIZE }, signal });
     const totalPages = res.data.totalPages || 0;
     if (totalPages > 0 && pageActual > totalPages) {
       setPaginas((prev) => ({ ...prev, [activeTab]: totalPages }));
@@ -63,53 +69,48 @@ export default function MisActividades() {
     setPaginas((prev) => ({ ...prev, [activeTab]: destino }));
   };
 
+  const manejarTeclas = (e) => {
+    const indice = TABS.findIndex((t) => t.id === activeTab);
+    let siguiente = indice;
+    if (e.key === 'ArrowRight') siguiente = (indice + 1) % TABS.length;
+    else if (e.key === 'ArrowLeft') siguiente = (indice - 1 + TABS.length) % TABS.length;
+    else if (e.key === 'Home') siguiente = 0;
+    else if (e.key === 'End') siguiente = TABS.length - 1;
+    else return;
+    e.preventDefault();
+    setActiveTab(TABS[siguiente].id);
+    const boton = tabsRef.current[siguiente];
+    if (boton) boton.focus();
+  };
+
   const items = actividades.datos ? actividades.datos.items || [] : [];
   const totalPages = actividades.datos ? actividades.datos.totalPages || 0 : 0;
   const totalItems = actividades.datos ? actividades.datos.totalItems || 0 : 0;
 
-  const renderTabButton = (id) => (
-    <button
-      key={id}
-      type="button"
-      className="btn"
-      style={{
-        flex: 1,
-        background: activeTab === id ? 'var(--glass-bg)' : 'transparent',
-        borderBottom: activeTab === id ? '2px solid var(--accent-primary)' : '2px solid transparent',
-        color: activeTab === id ? 'var(--text-main)' : 'var(--text-muted)',
-        borderRadius: 'var(--radius-md) var(--radius-md) 0 0'
-      }}
-      onClick={() => setActiveTab(id)}
-    >
-      {TABS[id].label}
-    </button>
-  );
-
-  const renderMetrica = (etiqueta, valor, color) => (
-    <div className="glass-panel" style={{ textAlign: 'center', padding: '1.5rem' }}>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.95rem' }}>{etiqueta}</p>
-      <h2 className="tabular" style={{ fontSize: '2rem', margin: 0, color: color || 'var(--text-main)' }}>{valor}</h2>
-    </div>
-  );
-
   const renderMetricas = () => {
     if (metricas.cargando) {
-      return <div style={{ marginBottom: '2.5rem' }}><Skeleton variante="metricas" cantidad={4} etiqueta="Cargando métricas" /></div>;
+      return <Skeleton variante="metricas" cantidad={4} etiqueta="Cargando métricas" />;
     }
     if (!metricas.datos) return null;
+    const m = metricas.datos;
 
     return (
-      <div style={{ marginBottom: '2.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-          {renderMetrica('Recaudado', formatoARS(metricas.datos.recaudado), 'var(--success)')}
-          {renderMetrica('Vendidas', metricas.datos.vendidas, 'var(--accent-primary)')}
-          {renderMetrica('En curso', metricas.datos.enCurso, 'var(--warning)')}
-          {renderMetrica('Publicadas', metricas.datos.totalPublicadas)}
+      <div className="metricas">
+        <div className="glass-panel metrica metrica--principal">
+          <span className="metrica__etiqueta">Recaudado</span>
+          <strong className="metrica__valor">{formatoARS(m.recaudado)}</strong>
+          <span className="metrica__nota">{plural(m.vendidas, 'subasta vendida', 'subastas vendidas', 'Ninguna venta todavía')}</span>
         </div>
-        {metricas.datos.parcial && (
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.75rem', textAlign: 'center' }}>
-            La recaudación se calcula sobre tus primeras {TOPE_METRICAS} publicaciones.
-          </p>
+        <div className="glass-panel metrica">
+          <span className="metrica__etiqueta">En curso</span>
+          <strong className="metrica__valor">{m.enCurso}</strong>
+        </div>
+        <div className="glass-panel metrica">
+          <span className="metrica__etiqueta">Publicadas</span>
+          <strong className="metrica__valor">{m.totalPublicadas}</strong>
+        </div>
+        {m.parcial && (
+          <p className="metricas__aviso">La recaudación se calcula sobre tus primeras {TOPE_METRICAS} publicaciones.</p>
         )}
       </div>
     );
@@ -169,16 +170,35 @@ export default function MisActividades() {
   };
 
   return (
-    <div className="layout-container">
-      <h1 style={{ marginBottom: '2rem' }}>Mis Actividades</h1>
+    <div className="layout-container actividades">
+      <h1 className="actividades__titulo">Mis actividades</h1>
 
-      <div style={{ display: 'flex', marginBottom: '2rem', borderBottom: '1px solid var(--glass-border)' }}>
-        {Object.keys(TABS).map(renderTabButton)}
+      <div className="tabs" role="tablist" aria-label="Secciones de mis actividades" onKeyDown={manejarTeclas}>
+        {TABS.map((t, i) => {
+          const activo = t.id === activeTab;
+          return (
+            <button
+              key={t.id}
+              ref={(el) => { tabsRef.current[i] = el; }}
+              type="button"
+              role="tab"
+              id={`tab-${t.id}`}
+              aria-selected={activo}
+              aria-controls={`panel-${t.id}`}
+              tabIndex={activo ? 0 : -1}
+              className={`tabs__boton${activo ? ' tabs__boton--activo' : ''}`}
+              onClick={() => setActiveTab(t.id)}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
-      {activeTab === 'publicaciones' && renderMetricas()}
-
-      {renderContenido()}
+      <div id={`panel-${activeTab}`} role="tabpanel" aria-labelledby={`tab-${activeTab}`} className="actividades__panel">
+        {activeTab === 'publicaciones' && renderMetricas()}
+        {renderContenido()}
+      </div>
     </div>
   );
 }

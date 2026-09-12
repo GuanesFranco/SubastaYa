@@ -1,135 +1,210 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
+import useTitulo from '../hooks/useTitulo';
+import { errorDeCampo, mensajeDeError, TIPOS_ERROR } from '../utils/errores';
+import './Login.css';
+
+const USUARIOS_PRUEBA = [
+  { email: 'vendedor@test.com', rol: 'Vendedor' },
+  { email: 'comprador1@test.com', rol: 'Comprador que lidera' },
+  { email: 'comprador2@test.com', rol: 'Comprador superado' },
+  { email: 'sinfondos@test.com', rol: 'Sin saldo suficiente' }
+];
+const PASSWORD_PRUEBA = 'Test1234!';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validar(formData, registrando) {
+  const errores = {};
+  if (registrando && formData.nombre.trim().length < 2) {
+    errores.nombre = 'El nombre debe tener al menos 2 caracteres.';
+  }
+  if (!EMAIL_REGEX.test(formData.email)) {
+    errores.email = 'Ingresá un correo válido.';
+  }
+  if (formData.password.length < 6) {
+    errores.password = 'La contraseña debe tener al menos 6 caracteres.';
+  }
+  return errores;
+}
 
 export default function Login() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
-  
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
-    password: ''
-  });
-  
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const location = useLocation();
+
+  const [registrando, setRegistrando] = useState(false);
+  const [formData, setFormData] = useState({ nombre: '', email: '', password: '' });
+  const [errores, setErrores] = useState({});
+  const [errorGeneral, setErrorGeneral] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+
+  useTitulo(registrando ? 'Crear cuenta' : 'Iniciar sesión');
+
+  const destino = location.state && location.state.from ? location.state.from : '/';
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError('');
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrores((prev) => ({ ...prev, [name]: '' }));
+    setErrorGeneral('');
   };
 
-  const validateForm = () => {
-    if (isRegistering) {
-      if (formData.nombre.length < 2) {
-        setError('El nombre debe tener al menos 2 caracteres.');
-        return false;
-      }
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Formato de correo electrónico inválido.');
-      return false;
-    }
-    
-    if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
-      return false;
-    }
-    
-    return true;
+  const cambiarModo = () => {
+    setRegistrando((prev) => !prev);
+    setErrores({});
+    setErrorGeneral('');
+  };
+
+  const usarUsuarioPrueba = (email) => {
+    setRegistrando(false);
+    setFormData({ nombre: '', email, password: PASSWORD_PRUEBA });
+    setErrores({});
+    setErrorGeneral('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-    
-    setLoading(true);
-    setError('');
-    
+    const erroresCliente = validar(formData, registrando);
+    if (Object.keys(erroresCliente).length > 0) {
+      setErrores(erroresCliente);
+      return;
+    }
+
+    setEnviando(true);
+    setErrorGeneral('');
     try {
-      if (isRegistering) {
-        await register(formData.email, formData.password, formData.nombre);
+      if (registrando) {
+        await register(formData.email, formData.password, formData.nombre.trim());
       } else {
         await login(formData.email, formData.password);
       }
-      navigate('/'); // Redirigir al inicio tras autenticarse
+      navigate(destino, { replace: true });
     } catch (err) {
-      setError(err.message || 'Error al autenticarse.');
+      if (err.kind === TIPOS_ERROR.VALIDACION && err.errores) {
+        setErrores({
+          nombre: errorDeCampo(err, 'nombre'),
+          email: errorDeCampo(err, 'email'),
+          password: errorDeCampo(err, 'password')
+        });
+        if (!errorDeCampo(err, 'nombre') && !errorDeCampo(err, 'email') && !errorDeCampo(err, 'password')) {
+          setErrorGeneral(mensajeDeError(err));
+        }
+      } else {
+        setErrorGeneral(mensajeDeError(err));
+      }
     } finally {
-      setLoading(false);
+      setEnviando(false);
     }
   };
 
+  const claseInput = (campo) => `input-field${errores[campo] ? ' input-field--error' : ''}`;
+
   return (
-    <div className="layout-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      <div className="glass-panel" style={{ maxWidth: '400px', width: '100%' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--accent-primary)' }}>
-          {isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión'}
-        </h2>
-        
-        {error && <div className="alert alert-danger">{error}</div>}
-        
-        <form onSubmit={handleSubmit}>
-          {isRegistering && (
+    <div className="layout-container login">
+      <div className="glass-panel login__panel">
+        <div className="login__encabezado">
+          <h1 className="login__titulo">{registrando ? 'Crear cuenta' : 'Iniciar sesión'}</h1>
+          <p className="login__subtitulo">
+            {registrando
+              ? 'Tu billetera arranca en $0. Después podés cargar saldo simulado.'
+              : 'Entrá para ofertar, publicar y seguir tus subastas en vivo.'}
+          </p>
+        </div>
+
+        {errorGeneral && <div className="alert alert-danger" role="alert">{errorGeneral}</div>}
+
+        <form onSubmit={handleSubmit} className="login__form" noValidate>
+          {registrando && (
             <div className="form-group">
-              <label className="form-label">Nombre</label>
-              <input 
-                type="text" 
+              <label className="form-label" htmlFor="login-nombre">Nombre</label>
+              <input
+                id="login-nombre"
+                type="text"
                 name="nombre"
-                className="input-field" 
-                value={formData.nombre} 
-                onChange={handleChange} 
-                placeholder="Ej: Enzo"
+                className={claseInput('nombre')}
+                value={formData.nombre}
+                onChange={handleChange}
+                placeholder="Cómo querés que te vean"
+                autoComplete="name"
+                aria-invalid={Boolean(errores.nombre)}
+                aria-describedby={errores.nombre ? 'login-nombre-error' : undefined}
               />
+              {errores.nombre && <p id="login-nombre-error" className="form-error">{errores.nombre}</p>}
             </div>
           )}
-          
+
           <div className="form-group">
-            <label className="form-label">Email</label>
-            <input 
-              type="email" 
+            <label className="form-label" htmlFor="login-email">Email</label>
+            <input
+              id="login-email"
+              type="email"
               name="email"
-              className="input-field" 
-              value={formData.email} 
-              onChange={handleChange} 
-              placeholder="correo@test.com"
+              className={claseInput('email')}
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="correo@ejemplo.com"
+              autoComplete="email"
+              inputMode="email"
+              aria-invalid={Boolean(errores.email)}
+              aria-describedby={errores.email ? 'login-email-error' : undefined}
             />
+            {errores.email && <p id="login-email-error" className="form-error">{errores.email}</p>}
           </div>
-          
+
           <div className="form-group">
-            <label className="form-label">Contraseña</label>
-            <input 
-              type="password" 
-              name="password"
-              className="input-field" 
-              value={formData.password} 
-              onChange={handleChange} 
-              placeholder="******"
-            />
+            <label className="form-label" htmlFor="login-password">Contraseña</label>
+            <div className="login__password">
+              <input
+                id="login-password"
+                type={mostrarPassword ? 'text' : 'password'}
+                name="password"
+                className={claseInput('password')}
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Mínimo 6 caracteres"
+                autoComplete={registrando ? 'new-password' : 'current-password'}
+                aria-invalid={Boolean(errores.password)}
+                aria-describedby={errores.password ? 'login-password-error' : undefined}
+              />
+              <button
+                type="button"
+                className="login__ver"
+                onClick={() => setMostrarPassword((v) => !v)}
+                aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-pressed={mostrarPassword}
+              >
+                {mostrarPassword ? 'Ocultar' : 'Mostrar'}
+              </button>
+            </div>
+            {errores.password && <p id="login-password-error" className="form-error">{errores.password}</p>}
           </div>
-          
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Cargando...' : (isRegistering ? 'Registrarse' : 'Ingresar')}
+
+          <button type="submit" className="btn btn-primary login__submit" disabled={enviando} aria-busy={enviando}>
+            {enviando ? 'Ingresando…' : (registrando ? 'Crear cuenta' : 'Ingresar')}
           </button>
         </form>
-        
-        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <button 
-            type="button" 
-            className="btn" 
-            style={{ background: 'transparent', color: 'var(--text-muted)' }}
-            onClick={() => {
-              setIsRegistering(!isRegistering);
-              setError('');
-            }}
-          >
-            {isRegistering ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
-          </button>
-        </div>
+
+        <button type="button" className="login__cambiar" onClick={cambiarModo}>
+          {registrando ? '¿Ya tenés cuenta? Iniciá sesión' : '¿No tenés cuenta? Registrate'}
+        </button>
+
+        {import.meta.env.DEV && (
+          <details className="login__prueba">
+            <summary>Usuarios de prueba</summary>
+            <ul>
+              {USUARIOS_PRUEBA.map((u) => (
+                <li key={u.email}>
+                  <button type="button" onClick={() => usarUsuarioPrueba(u.email)}>
+                    <span className="login__prueba-email">{u.email}</span>
+                    <span className="login__prueba-rol">{u.rol}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </div>
     </div>
   );

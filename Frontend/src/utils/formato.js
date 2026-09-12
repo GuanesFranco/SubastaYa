@@ -37,6 +37,23 @@ export function descomponerDuracion(ms) {
   };
 }
 
+export function describirDuracion(ms) {
+  const totalMinutos = Math.max(0, Math.floor(ms / 60000));
+  const dias = Math.floor(totalMinutos / 1440);
+  const horas = Math.floor((totalMinutos % 1440) / 60);
+  const minutos = totalMinutos % 60;
+  const partes = [];
+  if (dias > 0) partes.push(plural(dias, 'día', 'días'));
+  if (horas > 0) partes.push(plural(horas, 'hora', 'horas'));
+  if (minutos > 0 && dias === 0) partes.push(plural(minutos, 'minuto', 'minutos'));
+  return partes.length > 0 ? partes.join(' y ') : 'menos de un minuto';
+}
+
+export function aDatetimeLocal(fecha) {
+  const dos = (n) => String(n).padStart(2, '0');
+  return `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}T${dos(fecha.getHours())}:${dos(fecha.getMinutes())}`;
+}
+
 export function formatoDuracion(ms) {
   const { total, horas, minutos, segundos } = descomponerDuracion(ms);
   const dos = (n) => String(n).padStart(2, '0');

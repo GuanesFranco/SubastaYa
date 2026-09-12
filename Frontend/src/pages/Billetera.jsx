@@ -6,37 +6,29 @@ import EstadoVacio from '../components/EstadoVacio';
 import EstadoError from '../components/EstadoError';
 import useRecurso from '../hooks/useRecurso';
 import useToast from '../hooks/useToast';
+import useTitulo from '../hooks/useTitulo';
 import { formatoARS, formatoFechaHora } from '../utils/formato';
 import { mensajeDeError } from '../utils/errores';
+import './Billetera.css';
 
 const PAGE_SIZE = 10;
-const BALANCE_VACIO = { saldoTotal: 0, saldoRetenido: 0, saldoDisponible: 0 };
+const MONTOS_RAPIDOS = [10000, 50000, 100000];
 
-const ETIQUETAS_TIPO = {
-  Deposito: 'Depósito',
-  Liberacion: 'Liberación',
-  Retencion: 'Retención',
-  Debito: 'Débito'
+const TIPOS = {
+  Deposito: { etiqueta: 'Depósito', signo: '+', clase: 'ingreso' },
+  Liberacion: { etiqueta: 'Liberación', signo: '+', clase: 'ingreso' },
+  Retencion: { etiqueta: 'Retención', signo: '−', clase: 'retencion' },
+  Debito: { etiqueta: 'Débito', signo: '−', clase: 'egreso' }
 };
 
-const getTipoColor = (tipo) => {
-  switch (tipo) {
-    case 'Deposito':
-    case 'Liberacion':
-      return 'var(--success)';
-    case 'Retencion':
-      return 'var(--warning)';
-    case 'Debito':
-      return 'var(--danger)';
-    default:
-      return 'var(--text-main)';
-  }
-};
-
-const esEgreso = (tipo) => tipo === 'Retencion' || tipo === 'Debito';
+function describirTipo(tipo) {
+  return TIPOS[tipo] || { etiqueta: tipo, signo: '', clase: 'neutro' };
+}
 
 export default function Billetera() {
   const toast = useToast();
+  useTitulo('Mi billetera');
+
   const [page, setPage] = useState(1);
   const [montoDeposito, setMontoDeposito] = useState('');
   const [depositando, setDepositando] = useState(false);
@@ -56,7 +48,7 @@ export default function Billetera() {
   const handleDeposito = async (e) => {
     e.preventDefault();
     const monto = Number(montoDeposito);
-    if (!monto || monto <= 0) return;
+    if (!Number.isFinite(monto) || monto <= 0) return;
 
     setDepositando(true);
     try {
@@ -73,35 +65,40 @@ export default function Billetera() {
     }
   };
 
-  const saldos = balance.datos || BALANCE_VACIO;
+  const saldos = balance.datos;
   const transacciones = movimientos.datos ? movimientos.datos.items || [] : [];
   const totalPages = movimientos.datos ? movimientos.datos.totalPages || 0 : 0;
   const totalItems = movimientos.datos ? movimientos.datos.totalItems || 0 : 0;
+  const montoValido = Number(montoDeposito) > 0;
 
   const renderSaldos = () => {
     if (balance.cargando) {
-      return <Skeleton variante="metricas" cantidad={3} etiqueta="Cargando saldos" />;
+      return <Skeleton variante="panel" lineas={2} etiqueta="Cargando saldos" />;
     }
 
-    if (balance.error && !balance.datos) {
+    if (balance.error && !saldos) {
       return <EstadoError compacto error={balance.error} onReintentar={balance.recargar} titulo="No pudimos cargar tus saldos" />;
     }
 
     return (
-      <div className="contenido-ocupado" aria-busy={balance.recargando} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-        <div className="glass-panel" style={{ textAlign: 'center', borderTop: '4px solid var(--accent-primary)' }}>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '1.1rem' }}>Saldo total</p>
-          <h2 className="tabular" style={{ fontSize: '2.5rem' }}>{formatoARS(saldos.saldoTotal)}</h2>
+      <section className="glass-panel saldos contenido-ocupado" aria-busy={balance.recargando}>
+        <div className="saldos__principal">
+          <span className="saldos__etiqueta">Disponible para ofertar</span>
+          <strong key={saldos.saldoDisponible} className="saldos__valor saldos__valor--principal">
+            {formatoARS(saldos.saldoDisponible)}
+          </strong>
         </div>
-        <div className="glass-panel" style={{ textAlign: 'center', borderTop: '4px solid var(--success)' }}>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '1.1rem' }}>Disponible para ofertar</p>
-          <h2 className="tabular" style={{ fontSize: '2.5rem', color: 'var(--success)' }}>{formatoARS(saldos.saldoDisponible)}</h2>
-        </div>
-        <div className="glass-panel" style={{ textAlign: 'center', borderTop: '4px solid var(--warning)' }}>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '1.1rem' }}>Retenido en ofertas</p>
-          <h2 className="tabular" style={{ fontSize: '2.5rem', color: 'var(--warning)' }}>{formatoARS(saldos.saldoRetenido)}</h2>
-        </div>
-      </div>
+        <dl className="saldos__secundarios">
+          <div className="saldos__item">
+            <dt className="saldos__etiqueta">Retenido en ofertas</dt>
+            <dd className="saldos__valor saldos__valor--retenido">{formatoARS(saldos.saldoRetenido)}</dd>
+          </div>
+          <div className="saldos__item">
+            <dt className="saldos__etiqueta">Saldo total</dt>
+            <dd className="saldos__valor">{formatoARS(saldos.saldoTotal)}</dd>
+          </div>
+        </dl>
+      </section>
     );
   };
 
@@ -130,40 +127,30 @@ export default function Billetera() {
         {movimientos.error && (
           <EstadoError compacto error={movimientos.error} onReintentar={movimientos.recargar} titulo="No pudimos actualizar los movimientos" />
         )}
-        <div className="glass-panel contenido-ocupado" aria-busy={movimientos.recargando} style={{ padding: '0', overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '560px' }}>
-              <thead style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                <tr>
-                  <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--glass-border)' }}>Fecha</th>
-                  <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--glass-border)' }}>Tipo</th>
-                  <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--glass-border)' }}>Detalle</th>
-                  <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--glass-border)', textAlign: 'right' }}>Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transacciones.map((tx) => (
-                  <tr key={tx.id}>
-                    <td className="tabular" style={{ padding: '1rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.02)', whiteSpace: 'nowrap' }}>
-                      {formatoFechaHora(tx.fecha)}
-                    </td>
-                    <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                      <span style={{ color: getTipoColor(tx.tipo), fontWeight: 'bold' }}>
-                        {ETIQUETAS_TIPO[tx.tipo] || tx.tipo}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.02)', color: 'var(--text-muted)' }}>
-                      {tx.descripcion}
-                    </td>
-                    <td className="tabular" style={{ padding: '1rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.02)', textAlign: 'right', fontWeight: 'bold', color: getTipoColor(tx.tipo), whiteSpace: 'nowrap' }}>
-                      {esEgreso(tx.tipo) ? '-' : '+'}
-                      {formatoARS(tx.monto)}
-                    </td>
+        <div className="glass-panel movimientos contenido-ocupado" aria-busy={movimientos.recargando}>
+          <table className="movimientos__tabla">
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Detalle</th>
+                <th scope="col" className="movimientos__monto">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transacciones.map((tx) => {
+                const tipo = describirTipo(tx.tipo);
+                return (
+                  <tr key={tx.id} className={`movimientos__fila movimientos__fila--${tipo.clase}`}>
+                    <td className="movimientos__fecha">{formatoFechaHora(tx.fecha)}</td>
+                    <td className="movimientos__tipo"><span className="movimientos__badge">{tipo.etiqueta}</span></td>
+                    <td className="movimientos__detalle">{tx.descripcion}</td>
+                    <td className="movimientos__monto">{tipo.signo}{formatoARS(tx.monto)}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
         <Paginador
@@ -178,37 +165,51 @@ export default function Billetera() {
   };
 
   return (
-    <div className="layout-container" style={{ maxWidth: 'var(--container-narrow)' }}>
-      <h1 style={{ marginBottom: '2rem' }}>Mi Billetera</h1>
+    <div className="layout-container billetera">
+      <h1 className="billetera__titulo">Mi billetera</h1>
 
-      <div className="glass-panel" style={{ marginBottom: '2rem' }}>
-        <h3 style={{ marginBottom: '1rem' }}>Cargar saldo</h3>
-        <form onSubmit={handleDeposito} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <input
-            type="number"
-            className="input-field"
-            style={{ flex: '1 1 200px' }}
-            placeholder="Monto a depositar"
-            value={montoDeposito}
-            onChange={(e) => setMontoDeposito(e.target.value)}
-            min="1"
-            step="0.01"
-            required
-            aria-label="Monto a depositar"
-            disabled={depositando}
-          />
-          <button type="submit" className="btn btn-primary" disabled={depositando || !montoDeposito}>
-            {depositando ? 'Procesando...' : 'Depositar'}
-          </button>
+      {renderSaldos()}
+
+      <section className="glass-panel cargar">
+        <div className="cargar__texto">
+          <h2 className="cargar__titulo">Cargar saldo</h2>
+          <p className="cargar__ayuda">Es una carga simulada: se acredita al instante y podés usarla para ofertar.</p>
+        </div>
+        <form onSubmit={handleDeposito} className="cargar__form">
+          <div className="cargar__rapidos" role="group" aria-label="Montos rápidos">
+            {MONTOS_RAPIDOS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={`cargar__chip${Number(montoDeposito) === m ? ' cargar__chip--activo' : ''}`}
+                onClick={() => setMontoDeposito(String(m))}
+                disabled={depositando}
+              >
+                {formatoARS(m)}
+              </button>
+            ))}
+          </div>
+          <div className="cargar__fila">
+            <input
+              type="number"
+              className="input-field cargar__input"
+              placeholder="Otro monto"
+              value={montoDeposito}
+              onChange={(e) => setMontoDeposito(e.target.value)}
+              min="1"
+              step="1"
+              inputMode="numeric"
+              aria-label="Monto a depositar"
+              disabled={depositando}
+            />
+            <button type="submit" className="btn btn-primary" disabled={depositando || !montoValido} aria-busy={depositando}>
+              {depositando ? 'Acreditando…' : 'Depositar'}
+            </button>
+          </div>
         </form>
-      </div>
+      </section>
 
-      <div style={{ marginBottom: '3rem' }}>
-        {renderSaldos()}
-      </div>
-
-      <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', color: 'var(--text-muted)' }}>Últimos movimientos</h2>
-
+      <h2 className="billetera__subtitulo">Movimientos</h2>
       {renderMovimientos()}
     </div>
   );

@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import useAuth from '../hooks/useAuth';
+import useTitulo from '../hooks/useTitulo';
 import useToast from '../hooks/useToast';
 import useCountdown from '../hooks/useCountdown';
 import useLatest from '../hooks/useLatest';
 import useAuctionHub from '../hooks/useAuctionHub';
+import useRecurso from '../hooks/useRecurso';
 import Skeleton from '../components/Skeleton';
 import EstadoError from '../components/EstadoError';
 import EncabezadoSubasta from '../components/sala/EncabezadoSubasta';
@@ -18,6 +20,7 @@ import { montoSugerido as calcularMontoSugerido, normalizarEstado } from '../uti
 import './SalaSubasta.css';
 
 const PUJAS_POR_TANDA = 10;
+const DURACION_EXITO = 1800;
 
 function Sala({ subastaId }) {
   const navigate = useNavigate();
@@ -39,9 +42,28 @@ function Sala({ subastaId }) {
 
   const [cierre, setCierre] = useState(null);
   const [alertaSuperado, setAlertaSuperado] = useState(0);
+  const [extension, setExtension] = useState(null);
+  const [exitoReciente, setExitoReciente] = useState(false);
+
+  useTitulo(subasta ? subasta.titulo : 'Sala en vivo');
 
   const subastaRef = useLatest(subasta);
   const pujasVisiblesRef = useLatest(pujasVisibles);
+  const fechaFinPreviaRef = useRef(null);
+  const exitoTimerRef = useRef(null);
+
+  const saldo = useRecurso(
+    (signal) => api.get('/wallets/me', { signal }).then((res) => res.data),
+    [subastaId]
+  );
+
+  useEffect(() => () => clearTimeout(exitoTimerRef.current), []);
+
+  const marcarExito = () => {
+    clearTimeout(exitoTimerRef.current);
+    setExitoReciente(true);
+    exitoTimerRef.current = setTimeout(() => setExitoReciente(false), DURACION_EXITO);
+  };
 
   const fetchSubasta = useCallback(async ({ silencioso = false } = {}) => {
     try {
@@ -85,6 +107,8 @@ function Sala({ subastaId }) {
         && previa.compradorLiderId === usuarioId
         && evento.compradorId !== usuarioId;
 
+      if (previa) fechaFinPreviaRef.current = previa.fechaFin;
+
       setSubasta((prev) => {
         if (!prev) return prev;
         return {
@@ -104,7 +128,11 @@ function Sala({ subastaId }) {
       fetchHistorial(pujasVisiblesRef.current);
     },
     onAuctionExtended: (evento) => {
+      const referencia = fechaFinPreviaRef.current || (subastaRef.current ? subastaRef.current.fechaFin : null);
+      const ms = referencia ? new Date(evento.nuevaFechaFin).getTime() - new Date(referencia).getTime() : 0;
+      fechaFinPreviaRef.current = null;
       setSubasta((prev) => (prev ? { ...prev, fechaFin: evento.nuevaFechaFin } : prev));
+      setExtension({ id: Date.now(), ms });
       toast.aviso('Se sumó tiempo por una oferta en el último minuto.');
     },
     onAuctionClosed: (evento) => {
@@ -143,11 +171,14 @@ function Sala({ subastaId }) {
     const monto = Number(montoManual ?? calcularMontoSugerido(subasta));
 
     setPujando(true);
+    fechaFinPreviaRef.current = subasta.fechaFin;
     try {
       const res = await api.post(`/auctions/${subastaId}/bids`, { monto });
 
       setHeParticipado(true);
       setMontoManual(null);
+      marcarExito();
+      saldo.recargar();
       setSubasta((prev) => ({
         ...prev,
         precioActual: res.data.monto,
@@ -229,6 +260,8 @@ function Sala({ subastaId }) {
             ultimoMinuto={countdown.ultimoMinuto}
             estadoConexion={estadoConexion}
             onReconectar={reconectar}
+            extension={extension}
+            onExtensionFin={() => setExtension(null)}
           />
         </div>
 
@@ -248,9 +281,12 @@ function Sala({ subastaId }) {
               <ConsolaPuja
                 monto={montoPuja}
                 montoSugerido={montoSugerido}
+                incremento={subasta.incrementoMinimo || 0}
+                disponible={saldo.datos ? saldo.datos.saldoDisponible : null}
                 onMontoChange={setMontoManual}
                 onSubmit={handlePujar}
                 enviando={pujando}
+                exito={exitoReciente}
               />
             )
           )}

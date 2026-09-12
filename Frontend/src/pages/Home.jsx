@@ -7,6 +7,7 @@ import Skeleton from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 import EstadoError from '../components/EstadoError';
 import useRecurso from '../hooks/useRecurso';
+import useTitulo from '../hooks/useTitulo';
 import { plural } from '../utils/formato';
 import './Home.css';
 
@@ -40,6 +41,7 @@ function leerPagina(searchParams) {
 }
 
 export default function Home() {
+  useTitulo('Catálogo');
   const [searchParams, setSearchParams] = useSearchParams();
   const filtros = leerFiltros(searchParams);
   const page = leerPagina(searchParams);

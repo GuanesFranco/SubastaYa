@@ -1,0 +1,327 @@
+.billetera {
+  max-width: var(--container-narrow);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.billetera__titulo {
+  margin-bottom: var(--space-2);
+}
+
+.billetera__subtitulo {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: var(--space-3);
+}
+
+.saldos {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: center;
+  border-left: 4px solid var(--success);
+}
+
+.saldos__principal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.saldos__etiqueta {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.saldos__valor {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.saldos__valor--principal {
+  display: block;
+  font-size: var(--text-display);
+  color: var(--success-text);
+  letter-spacing: -0.02em;
+  animation: precio-latido var(--duration-slow) var(--ease-out) both;
+}
+
+.saldos__valor--retenido {
+  color: var(--warning-text);
+}
+
+.saldos__secundarios {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--glass-border);
+}
+
+.saldos__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.saldos__item dd {
+  font-size: var(--text-xl);
+}
+
+.cargar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--space-6);
+  align-items: center;
+}
+
+.cargar__texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cargar__titulo {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.cargar__ayuda {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.cargar__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cargar__rapidos {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.cargar__chip {
+  flex: 1 1 auto;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.cargar__chip:hover:not(:disabled),
+.cargar__chip--activo {
+  color: var(--text-main);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.cargar__chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.cargar__chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cargar__fila {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.cargar__input {
+  flex: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.movimientos {
+  padding: 0;
+  overflow: hidden;
+}
+
+.movimientos__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.movimientos__tabla th {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.movimientos__tabla td {
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--glass-border);
+  vertical-align: middle;
+}
+
+.movimientos__fila:last-child td {
+  border-bottom: none;
+}
+
+.movimientos__fecha {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.movimientos__badge {
+  display: inline-block;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.movimientos__fila--ingreso .movimientos__badge {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.movimientos__fila--retencion .movimientos__badge {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.movimientos__fila--egreso .movimientos__badge {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.movimientos__detalle {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.movimientos__monto {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.movimientos__fila--ingreso .movimientos__monto {
+  color: var(--success-text);
+}
+
+.movimientos__fila--retencion .movimientos__monto {
+  color: var(--warning-text);
+}
+
+.movimientos__fila--egreso .movimientos__monto {
+  color: var(--danger-text);
+}
+
+@media (max-width: 900px) {
+  .saldos,
+  .cargar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .saldos__secundarios {
+    flex-direction: row;
+    padding-left: 0;
+    padding-top: var(--space-4);
+    border-left: none;
+    border-top: 1px solid var(--glass-border);
+  }
+
+  .saldos__item {
+    flex: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .saldos__valor--principal {
+    font-size: var(--text-3xl);
+  }
+
+  .cargar__fila {
+    flex-direction: column;
+  }
+
+  .movimientos__tabla thead {
+    display: none;
+  }
+
+  .movimientos__tabla,
+  .movimientos__tabla tbody {
+    display: block;
+  }
+
+  .movimientos__fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .movimientos__fila:last-child {
+    border-bottom: none;
+  }
+
+  .movimientos__tabla td {
+    display: block;
+    padding: 0;
+    border: none;
+  }
+
+  .movimientos__tipo {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .movimientos__monto {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .movimientos__fecha {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: var(--text-xs);
+  }
+
+  .movimientos__detalle {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin-top: var(--space-1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saldos__valor--principal {
+    animation: none;
+  }
+}
