@@ -37,10 +37,10 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<PujaResultadoDto> Handle(RealizarPujaCommand command)
+    public async Task<PujaResultadoDto> Handle(RealizarPujaCommand command, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Ejecutando RealizarPujaCommandHandler...");
-        var subasta = await _subastaRepository.ObtenerParaPujarAsync(command.SubastaId)
+        var subasta = await _subastaRepository.ObtenerParaPujarAsync(command.SubastaId, cancellationToken)
             ?? throw new KeyNotFoundException("La subasta no existe.");
 
         var ahora = FechaArgentina.AhoraUtc;
@@ -57,7 +57,7 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
             throw new MontoInsuficienteException($"La puja debe ser de al menos {montoMinimo}.");
         }
 
-        var billeteraComprador = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.CompradorId)
+        var billeteraComprador = await _billeteraRepository.ObtenerPorUsuarioIdAsync(command.CompradorId, cancellationToken)
             ?? throw new KeyNotFoundException("Billetera no encontrada.");
 
         try
@@ -75,7 +75,7 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
 
         if (liderAnteriorId.HasValue)
         {
-            var billeteraLiderAnterior = await _billeteraRepository.ObtenerPorUsuarioIdAsync(liderAnteriorId.Value);
+            var billeteraLiderAnterior = await _billeteraRepository.ObtenerPorUsuarioIdAsync(liderAnteriorId.Value, cancellationToken);
             if (billeteraLiderAnterior != null)
             {
                 billeteraLiderAnterior.Liberar(montoAnterior);
@@ -87,7 +87,7 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
                     Fecha = ahora,
                     Descripcion = $"Liberación por superación en subasta #{subasta.Id}",
                     SubastaId = subasta.Id
-                });
+                }, cancellationToken);
             }
         }
 
@@ -98,7 +98,7 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
             Monto = command.Monto,
             FechaPuja = ahora
         };
-        await _subastaRepository.AgregarPujaAsync(puja);
+        await _subastaRepository.AgregarPujaAsync(puja, cancellationToken);
         subasta.RegistrarNuevaPuja(puja);
 
         await _billeteraRepository.AgregarMovimientoAsync(new TransaccionLedger
@@ -109,7 +109,7 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
             Fecha = ahora,
             Descripcion = $"Retención por puja en subasta #{subasta.Id}",
             SubastaId = subasta.Id
-        });
+        }, cancellationToken);
 
         var tiempoExtendido = false;
         if (subasta.FechaFin - ahora <= VentanaAntiSniping)
@@ -125,12 +125,12 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
                 UsuarioId = command.CompradorId,
                 DetalleJson = $"{{\"nuevaFechaFin\":\"{FechaArgentina.ComoUtc(subasta.FechaFin):o}\"}}",
                 Fecha = ahora
-            });
+            }, cancellationToken);
         }
 
         try
         {
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
         catch (ConflictoConcurrenciaException)
         {

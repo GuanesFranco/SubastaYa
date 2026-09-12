@@ -4,5 +4,5 @@ namespace SubastaYa.Application.Interfaces.Persistence;
 
 public interface IAuditoriaLogRepository
 {
-    Task AgregarAsync(AuditoriaLog log);
+    Task AgregarAsync(AuditoriaLog log, CancellationToken cancellationToken = default);
 }

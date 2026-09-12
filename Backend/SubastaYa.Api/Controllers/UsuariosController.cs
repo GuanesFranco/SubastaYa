@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Api.Extensions;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Auth;
-using SubastaYa.Application.UseCases.Users.ListarMisPujas;
+using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.UseCases.Auctions.ListarMisSubastas;
+using SubastaYa.Application.UseCases.Users.ListarMisPujas;
 using SubastaYa.Application.UseCases.Users.RegistrarUsuario;
 
 namespace SubastaYa.Api.Controllers;
@@ -12,6 +13,7 @@ namespace SubastaYa.Api.Controllers;
 [ApiController]
 [Route("api/v1/users")]
 [Produces("application/json")]
+[ProducesErrorResponseType(typeof(ProblemDetails))]
 public class UsuariosController : ControllerBase
 {
     private readonly RegistrarUsuarioCommandHandler _handler;
@@ -33,42 +35,40 @@ public class UsuariosController : ControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] RegistrarUsuarioDto dto)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Register([FromBody] RegistrarUsuarioDto dto, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Intento de registro para usuario: {Email}", dto.Email);
-        var command = new RegistrarUsuarioCommand(dto);
-        var result = await _handler.Handle(command);
+        _logger.LogInformation("Intento de registro para un usuario nuevo.");
+
+        var result = await _handler.Handle(new RegistrarUsuarioCommand(dto), cancellationToken);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
     [HttpGet("me/auctions")]
     [Authorize]
-    [ProducesResponseType(typeof(IEnumerable<SubastaResumenDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetMisSubastas()
+    [ProducesResponseType(typeof(PaginatedResult<SubastaResumenDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMisSubastas([FromQuery] PaginacionDto paginacion, CancellationToken cancellationToken)
     {
         var userId = User.ObtenerUsuarioId();
         _logger.LogInformation("Usuario {UserId} consultando sus propias subastas publicadas.", userId);
-        
-        var query = new ListarMisSubastasQuery(userId);
-        var result = await _listarMisSubastasHandler.Handle(query);
+
+        var query = new ListarMisSubastasQuery(userId, paginacion.Page, paginacion.PageSize);
+        var result = await _listarMisSubastasHandler.Handle(query, cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("me/bids")]
     [Authorize]
-    [ProducesResponseType(typeof(IEnumerable<MisPujasDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetMisPujas()
+    [ProducesResponseType(typeof(PaginatedResult<MisPujasDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMisPujas([FromQuery] PaginacionDto paginacion, CancellationToken cancellationToken)
     {
         var userId = User.ObtenerUsuarioId();
         _logger.LogInformation("Usuario {UserId} consultando las subastas donde ha pujado.", userId);
-        
-        var query = new ListarMisPujasQuery(userId);
-        var result = await _listarMisPujasHandler.Handle(query);
+
+        var query = new ListarMisPujasQuery(userId, paginacion.Page, paginacion.PageSize);
+        var result = await _listarMisPujasHandler.Handle(query, cancellationToken);
         return Ok(result);
     }
 }
-
-

@@ -1,5 +1,4 @@
 using SubastaYa.Application.Interfaces.Persistence;
-using SubastaYa.Application.Interfaces.Services;
 using SubastaYa.Domain.Entities;
 
 namespace SubastaYa.Infrastructure.Persistence.Repositories;
@@ -13,9 +12,8 @@ public class AuditoriaLogRepository : IAuditoriaLogRepository
         _context = context;
     }
 
-    public async Task AgregarAsync(AuditoriaLog log)
+    public async Task AgregarAsync(AuditoriaLog log, CancellationToken cancellationToken = default)
     {
-        await _context.AuditoriaLogs.AddAsync(log);
+        await _context.AuditoriaLogs.AddAsync(log, cancellationToken);
     }
 }
-

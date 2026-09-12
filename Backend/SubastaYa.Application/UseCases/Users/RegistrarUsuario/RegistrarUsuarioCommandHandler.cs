@@ -28,10 +28,10 @@ public class RegistrarUsuarioCommandHandler : ICommandHandler<RegistrarUsuarioCo
         _jwtProvider = jwtProvider;
     }
 
-    public async Task<AuthResponseDto> Handle(RegistrarUsuarioCommand command)
+    public async Task<AuthResponseDto> Handle(RegistrarUsuarioCommand command, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Ejecutando RegistrarUsuarioCommandHandler...");
-        var existe = await _usuarioRepository.ObtenerPorEmailAsync(command.Dto.Email);
+        var existe = await _usuarioRepository.ObtenerPorEmailAsync(command.Dto.Email, cancellationToken);
         if (existe != null)
         {
             throw new SubastaYa.Domain.Exceptions.DomainException("El correo electrónico ya está registrado.");
@@ -50,8 +50,8 @@ public class RegistrarUsuarioCommandHandler : ICommandHandler<RegistrarUsuarioCo
         var billetera = new Billetera(0); // EF Core asignará UsuarioId luego de guardar o usando nav properties.
         usuario.Billetera = billetera;
 
-        await _usuarioRepository.AgregarAsync(usuario);
-        await _unitOfWork.SaveChangesAsync();
+        await _usuarioRepository.AgregarAsync(usuario, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var token = _jwtProvider.Generate(usuario);
 

@@ -16,10 +16,10 @@ public class GetWalletBalanceQueryHandler : IQueryHandler<GetWalletBalanceQuery,
         _billeteraRepository = billeteraRepository;
     }
 
-    public async Task<WalletBalanceDto> Handle(GetWalletBalanceQuery query)
+    public async Task<WalletBalanceDto> Handle(GetWalletBalanceQuery query, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Ejecutando GetWalletBalanceQueryHandler...");
-        var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(query.UsuarioId);
+        var billetera = await _billeteraRepository.ObtenerPorUsuarioIdAsync(query.UsuarioId, cancellationToken);
         if (billetera == null)
         {
             throw new KeyNotFoundException("Billetera no encontrada.");

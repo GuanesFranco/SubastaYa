@@ -48,7 +48,7 @@ public class AuctionSettlementWorker : BackgroundService
         {
             var subastaRepo = scope.ServiceProvider.GetRequiredService<ISubastaRepository>();
             var ahora = FechaArgentina.AhoraUtc;
-            pendientesIds = (await subastaRepo.ObtenerIdsPendientesDeActivacionAsync(ahora)).ToList();
+            pendientesIds = (await subastaRepo.ObtenerIdsPendientesDeActivacionAsync(ahora, stoppingToken)).ToList();
         }
 
         if (pendientesIds.Any())
@@ -66,11 +66,11 @@ public class AuctionSettlementWorker : BackgroundService
 
             try
             {
-                var subasta = await subastaRepo.ObtenerParaLiquidacionAsync(id);
+                var subasta = await subastaRepo.ObtenerParaLiquidacionAsync(id, stoppingToken);
                 if (subasta == null || subasta.Estado != EstadoSubasta.Programada) continue;
 
                 subasta.Activar();
-                await unitOfWork.SaveChangesAsync();
+                await unitOfWork.SaveChangesAsync(stoppingToken);
                 _logger.LogInformation("Subasta {SubastaId} activada exitosamente.", subasta.Id);
             }
             catch (Exception ex)
@@ -87,7 +87,7 @@ public class AuctionSettlementWorker : BackgroundService
         {
             var subastaRepo = scope.ServiceProvider.GetRequiredService<ISubastaRepository>();
             var ahora = FechaArgentina.AhoraUtc;
-            pendientesIds = (await subastaRepo.ObtenerIdsPendientesDeCierreAsync(ahora)).ToList();
+            pendientesIds = (await subastaRepo.ObtenerIdsPendientesDeCierreAsync(ahora, stoppingToken)).ToList();
         }
 
         if (pendientesIds.Any())
@@ -109,7 +109,7 @@ public class AuctionSettlementWorker : BackgroundService
 
             try
             {
-                var subasta = await subastaRepo.ObtenerParaLiquidacionAsync(id);
+                var subasta = await subastaRepo.ObtenerParaLiquidacionAsync(id, stoppingToken);
                 if (subasta == null || subasta.Estado != EstadoSubasta.Activa) continue;
 
                 if (subasta.PujaLiderId == null)
@@ -124,9 +124,9 @@ public class AuctionSettlementWorker : BackgroundService
                         Fecha = ahora,
                         DetalleJson = "{\"motivo\":\"Falta de pujas\"}"
                     };
-                    await logRepo.AgregarAsync(log);
+                    await logRepo.AgregarAsync(log, stoppingToken);
                     
-                    await unitOfWork.SaveChangesAsync();
+                    await unitOfWork.SaveChangesAsync(stoppingToken);
                     _logger.LogInformation("Subasta {SubastaId} finalizada sin pujas (Desierta).", subasta.Id);
 
                     await notificador.SubastaCerradaAsync(new SubastaCerradaDto(
@@ -138,8 +138,8 @@ public class AuctionSettlementWorker : BackgroundService
                     var vendedorId = subasta.VendedorId;
                     var monto = subasta.PrecioActual;
 
-                    var billeteraComprador = await billeteraRepo.ObtenerPorUsuarioIdAsync(compradorId);
-                    var billeteraVendedor = await billeteraRepo.ObtenerPorUsuarioIdAsync(vendedorId);
+                    var billeteraComprador = await billeteraRepo.ObtenerPorUsuarioIdAsync(compradorId, stoppingToken);
+                    var billeteraVendedor = await billeteraRepo.ObtenerPorUsuarioIdAsync(vendedorId, stoppingToken);
 
                     if (billeteraComprador == null || billeteraVendedor == null)
                     {
@@ -167,8 +167,8 @@ public class AuctionSettlementWorker : BackgroundService
                         SubastaId = subasta.Id,
                         Descripcion = $"Cobro por venta en subasta {subasta.Id}"
                     };
-                    await billeteraRepo.AgregarMovimientoAsync(debito);
-                    await billeteraRepo.AgregarMovimientoAsync(credito);
+                    await billeteraRepo.AgregarMovimientoAsync(debito, stoppingToken);
+                    await billeteraRepo.AgregarMovimientoAsync(credito, stoppingToken);
 
                     subasta.Finalizar(compradorId, monto);
 
@@ -180,9 +180,9 @@ public class AuctionSettlementWorker : BackgroundService
                         Fecha = ahora,
                         DetalleJson = $"{{\"compradorId\":{compradorId},\"monto\":{monto}}}"
                     };
-                    await logRepo.AgregarAsync(log);
+                    await logRepo.AgregarAsync(log, stoppingToken);
 
-                    await unitOfWork.SaveChangesAsync();
+                    await unitOfWork.SaveChangesAsync(stoppingToken);
                     _logger.LogInformation("Subasta {SubastaId} finalizada exitosamente con ganador {GanadorId}.", subasta.Id, compradorId);
 
                     await notificador.SubastaCerradaAsync(new SubastaCerradaDto(

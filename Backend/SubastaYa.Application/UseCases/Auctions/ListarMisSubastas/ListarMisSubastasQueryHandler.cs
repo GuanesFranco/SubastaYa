@@ -1,12 +1,14 @@
 using Microsoft.Extensions.Logging;
+using SubastaYa.Application.Common;
 using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
+using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.Interfaces.Persistence;
 using SubastaYa.Application.Interfaces.Services;
 
 namespace SubastaYa.Application.UseCases.Auctions.ListarMisSubastas;
 
-public class ListarMisSubastasQueryHandler
+public class ListarMisSubastasQueryHandler : IQueryHandler<ListarMisSubastasQuery, PaginatedResult<SubastaResumenDto>>
 {
     private readonly ILogger<ListarMisSubastasQueryHandler> _logger;
     private readonly ISubastaRepository _repository;
@@ -17,24 +19,21 @@ public class ListarMisSubastasQueryHandler
         _repository = repository;
     }
 
-    public async Task<IEnumerable<SubastaResumenDto>> Handle(ListarMisSubastasQuery query)
+    public async Task<PaginatedResult<SubastaResumenDto>> Handle(
+        ListarMisSubastasQuery query, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Ejecutando ListarMisSubastasQueryHandler...");
-        var subastas = await _repository.ObtenerSubastasPorVendedorAsync(query.VendedorId);
-        
-        return subastas.Select(s => new SubastaResumenDto(
-            s.Id,
-            s.Titulo,
-            s.UrlImagen,
-            s.PrecioActual,
-            FechaArgentina.ComoUtc(s.FechaFin),
-            s.Estado,
-            s.Categoria.Nombre,
-            s.Pujas.Count
-        ));
+
+        var (page, pageSize) = Paginacion.Normalizar(query.Page, query.PageSize);
+        var (items, total) = await _repository.ObtenerSubastasPorVendedorAsync(
+            query.VendedorId, page, pageSize, cancellationToken);
+
+        return new PaginatedResult<SubastaResumenDto>
+        {
+            Items = items.Select(d => d with { FechaFin = FechaArgentina.ComoUtc(d.FechaFin) }).ToList(),
+            TotalItems = total,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 }
-
-
-
-

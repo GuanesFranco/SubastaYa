@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SubastaYa.Application.Interfaces.Persistence;
-using SubastaYa.Application.Interfaces.Services;
 using SubastaYa.Domain.Entities;
-using SubastaYa.Infrastructure.Persistence;
 
 namespace SubastaYa.Infrastructure.Persistence.Repositories;
 
@@ -15,23 +13,31 @@ public class BilleteraRepository : IBilleteraRepository
         _ctx = ctx;
     }
 
-    public async Task<Billetera?> ObtenerPorUsuarioIdAsync(int usuarioId)
+    public async Task<Billetera?> ObtenerPorUsuarioIdAsync(int usuarioId, CancellationToken cancellationToken = default)
     {
-        return await _ctx.Billeteras.FirstOrDefaultAsync(b => b.UsuarioId == usuarioId);
+        return await _ctx.Billeteras.FirstOrDefaultAsync(b => b.UsuarioId == usuarioId, cancellationToken);
     }
 
-    public async Task AgregarMovimientoAsync(TransaccionLedger movimiento)
+    public async Task AgregarMovimientoAsync(TransaccionLedger movimiento, CancellationToken cancellationToken = default)
     {
-        await _ctx.TransaccionesLedger.AddAsync(movimiento);
+        await _ctx.TransaccionesLedger.AddAsync(movimiento, cancellationToken);
     }
 
-    public async Task<List<TransaccionLedger>> ObtenerMovimientosPorUsuarioIdAsync(int usuarioId)
+    public async Task<(IEnumerable<TransaccionLedger> Items, int Total)> ObtenerMovimientosPorUsuarioIdAsync(
+        int usuarioId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        return await _ctx.TransaccionesLedger
+        var query = _ctx.TransaccionesLedger
             .AsNoTracking()
-            .Where(t => t.Billetera.UsuarioId == usuarioId)
+            .Where(t => t.Billetera.UsuarioId == usuarioId);
+
+        int total = await query.CountAsync(cancellationToken);
+
+        var items = await query
             .OrderByDescending(t => t.Fecha)
-            .ToListAsync();
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
     }
 }
-

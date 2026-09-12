@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using SubastaYa.Application.DTOs.Auth;
 using SubastaYa.Application.Interfaces.Persistence;
@@ -27,7 +28,8 @@ public class RegistrarUsuarioCommandHandlerTests
             _usuarioRepositoryMock,
             _unitOfWorkMock,
             _passwordHasherMock,
-            _jwtProviderMock
+            _jwtProviderMock,
+            Substitute.For<ILogger<RegistrarUsuarioCommandHandler>>()
         );
     }
 
@@ -45,15 +47,14 @@ public class RegistrarUsuarioCommandHandlerTests
             PasswordHash = "hash"
         };
 
-        _usuarioRepositoryMock.ObtenerPorEmailAsync(dto.Email)
+        _usuarioRepositoryMock
+            .ObtenerPorEmailAsync(dto.Email, Arg.Any<CancellationToken>())
             .Returns(usuarioMock);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<DomainException>(() => _handler.Handle(command));
         Assert.Equal("El correo electrónico ya está registrado.", exception.Message);
 
-        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync();
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
-
-
