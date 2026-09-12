@@ -9,10 +9,13 @@ public record SubastaDetalleDto(
     string UrlImagen,
     decimal PrecioBase,
     decimal PrecioActual,
+    decimal IncrementoMinimo,
     DateTime FechaInicio,
     DateTime FechaFin,
     EstadoSubasta Estado,
     string CategoriaNombre,
+    int VendedorId,
     string VendedorNombre,
-    int? PujaLiderId
+    int? PujaLiderId,
+    int? CompradorLiderId
 );

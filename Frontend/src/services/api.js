@@ -20,27 +20,31 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.data) {
-      const data = error.response.data;
-
-      // Errores de validación (ValidationProblemDetails)
-      if (data.errors) {
-        const errorMessages = Object.values(data.errors).flat().join(' ');
-        return Promise.reject(new Error(errorMessages));
-      }
-
-      // Errores de Dominio (ProblemDetails)
-      if (data.detail) {
-        return Promise.reject(new Error(data.detail));
-      }
-
-      // Token vencido o inválido
+    if (error.response) {
+      // Token vencido o inválido (Mover antes de procesar detail)
       if (error.response.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(new Error('Sesión expirada. Por favor, inicia sesión nuevamente.'));
       }
+
+      const data = error.response.data;
+      
+      if (data.errors) {
+        const firstErrorKey = Object.keys(data.errors)[0];
+        return Promise.reject(new Error(data.errors[firstErrorKey][0]));
+      }
+
+      if (data.detail) {
+        const customError = new Error(data.detail);
+        customError.status = error.response.status;
+        return Promise.reject(customError);
+      }
+      
+      const genericError = new Error('Ocurrió un error en el servidor');
+      genericError.status = error.response.status;
+      return Promise.reject(genericError);
     }
     
     // Error genérico (red, timeout, etc)

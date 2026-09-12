@@ -5,5 +5,6 @@ public record PujaRealizadaDto(
     int PujaId,
     decimal Monto,
     DateTime FechaPuja,
-    DateTime FechaFin
+    DateTime FechaFin,
+    int CompradorId
 );

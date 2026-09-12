@@ -79,7 +79,9 @@ export default function MisActividades() {
                   titulo: puja.titulo,
                   estado: puja.estado,
                   precioActual: puja.precioActual,
-                  imagenUrl: puja.urlImagen
+                  urlImagen: puja.urlImagen,
+                  esGanador: puja.esGanador,
+                  fechaFin: puja.fechaFin
                 }} />
               ))
             )

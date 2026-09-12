@@ -145,7 +145,8 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
             puja.Id,
             puja.Monto,
             FechaArgentina.ComoUtc(puja.FechaPuja),
-            fechaFinUtc));
+            fechaFinUtc,
+            command.CompradorId));
 
         if (tiempoExtendido)
         {

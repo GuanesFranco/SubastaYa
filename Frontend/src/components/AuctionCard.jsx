@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function AuctionCard({ auction }) {
@@ -14,12 +14,35 @@ export default function AuctionCard({ auction }) {
     currency: 'ARS',
   });
 
+  const [tiempoRestante, setTiempoRestante] = useState('');
+
+  useEffect(() => {
+    if (!auction.fechaFin || auction.estado !== 'Activa') return;
+    
+    const fechaFinObj = new Date(auction.fechaFin);
+    const interval = setInterval(() => {
+      const diff = fechaFinObj.getTime() - Date.now();
+      if (diff <= 0) {
+        setTiempoRestante('Finalizando...');
+        return;
+      }
+      
+      const horas = Math.floor(diff / (1000 * 60 * 60));
+      const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      setTiempoRestante(`${horas}h ${minutos}m ${segundos}s`);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [auction.fechaFin, auction.estado]);
+
   return (
     <div className="glass-panel" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%', transition: 'transform 0.2s', cursor: 'pointer' }}
          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
     >
-      <div style={{ height: '200px', width: '100%', backgroundColor: 'rgba(0,0,0,0.5)', backgroundImage: `url(${auction.urlImagen || 'https://picsum.photos/600/400?random=' + auction.id})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div style={{ height: '200px', width: '100%', backgroundColor: 'rgba(0,0,0,0.5)', backgroundImage: `url(${auction.urlImagen || 'https://loremflickr.com/600/400/auction?lock=' + auction.id})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
       </div>
       
       <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
@@ -36,9 +59,17 @@ export default function AuctionCard({ auction }) {
           {auction.titulo}
         </h3>
         
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-          {auction.cantidadPujas !== undefined ? `${auction.cantidadPujas} oferta(s)` : ''}
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            {auction.cantidadPujas !== undefined ? `${auction.cantidadPujas} oferta(s)` : ''}
+            {tiempoRestante && <span style={{ marginLeft: '1rem', color: 'var(--text-main)' }}>⏱ {tiempoRestante}</span>}
+          </p>
+          {auction.esGanador && (
+            <span style={{ fontSize: '0.8rem', background: 'var(--success)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontWeight: 'bold' }}>
+              ¡Ganaste! 🏆
+            </span>
+          )}
+        </div>
 
         <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>

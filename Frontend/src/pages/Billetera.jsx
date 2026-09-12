@@ -5,6 +5,9 @@ export default function Billetera() {
   const [balance, setBalance] = useState({ saldoTotal: 0, saldoRetenido: 0, saldoDisponible: 0 });
   const [transacciones, setTransacciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [montoDeposito, setMontoDeposito] = useState('');
+  const [depositando, setDepositando] = useState(false);
+  const [toast, setToast] = useState({ show: false, msg: '', type: '' });
   const [error, setError] = useState('');
 
   const fetchBilletera = async () => {
@@ -17,9 +20,27 @@ export default function Billetera() {
       const resTransacciones = await api.get('/wallets/me/transactions?pageSize=50');
       setTransacciones(resTransacciones.data.items || []);
     } catch (err) {
-      setError('Error al cargar la billetera: ' + (err.message || ''));
+      setError('Error al cargar la billetera: ' + err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeposito = async (e) => {
+    e.preventDefault();
+    if (!montoDeposito || Number(montoDeposito) <= 0) return;
+    
+    setDepositando(true);
+    try {
+      await api.post('/wallets/me/deposits', { monto: Number(montoDeposito) });
+      setToast({ show: true, msg: '¡Depósito exitoso!', type: 'success' });
+      setMontoDeposito('');
+      fetchBilletera(); // Refrescar saldos e historial
+    } catch (err) {
+      setToast({ show: true, msg: err.message || 'Error al depositar', type: 'error' });
+    } finally {
+      setDepositando(false);
+      setTimeout(() => setToast({ show: false, msg: '', type: '' }), 5000);
     }
   };
 
@@ -44,7 +65,41 @@ export default function Billetera() {
 
   return (
     <div className="layout-container" style={{ maxWidth: '900px' }}>
+      {toast.show && (
+        <div style={{
+          position: 'fixed', top: '20px', right: '20px', zIndex: 1000,
+          background: toast.type === 'error' ? 'var(--danger)' : 'var(--success)',
+          color: 'white', padding: '1rem 2rem', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          {toast.msg}
+        </div>
+      )}
+
       <h1 style={{ marginBottom: '2rem' }}>Mi Billetera</h1>
+
+      <div className="glass-panel" style={{ marginTop: '2rem', marginBottom: '2rem', display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
+        <div style={{ flexGrow: 1 }}>
+          <h3 style={{ marginBottom: '1rem' }}>Cargar Saldo</h3>
+          <form onSubmit={handleDeposito} style={{ display: 'flex', gap: '1rem' }}>
+            <input 
+              type="number" 
+              className="input-field" 
+              placeholder="Monto a depositar..." 
+              value={montoDeposito}
+              onChange={(e) => setMontoDeposito(e.target.value)}
+              min="1"
+              step="0.01"
+              required
+            />
+            <button type="submit" className="btn btn-primary" disabled={depositando}>
+              {depositando ? 'Procesando...' : 'Depositar'}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <h3 style={{ marginBottom: '1rem' }}>Últimos Movimientos</h3>
       
       {error && <div className="alert alert-danger">{error}</div>}
 
