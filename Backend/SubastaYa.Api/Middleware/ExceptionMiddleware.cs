@@ -57,6 +57,15 @@ public class ExceptionMiddleware
         {
             await EscribirErrorAsync(context, StatusCodes.Status400BadRequest, "Solicitud inválida", ex.Message);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            _logger.LogInformation("Request cancelado por el cliente antes de completarse: {Path}", context.Request.Path);
+
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = 499;
+            }
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error no controlado procesando {Path}", context.Request.Path);

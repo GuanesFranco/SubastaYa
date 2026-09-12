@@ -26,7 +26,7 @@ public interface ISubastaRepository
 
     Task AgregarPujaAsync(Puja puja, CancellationToken cancellationToken = default);
 
-    Task<(IEnumerable<Subasta> Items, int Total)> ObtenerSubastasDondeParticipoAsync(
+    Task<(IEnumerable<MisPujasDto> Items, int Total)> ObtenerSubastasDondeParticipoAsync(
         int compradorId, int page, int pageSize, CancellationToken cancellationToken = default);
 
     Task<IEnumerable<int>> ObtenerIdsPendientesDeActivacionAsync(
