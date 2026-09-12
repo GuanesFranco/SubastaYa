@@ -26,6 +26,12 @@ const ICONOS = {
       <path d="M12 4l9 16H3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
       <path d="M12 10v4M12 17v.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
+  ),
+  invitado: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   )
 };
 
@@ -49,6 +55,13 @@ function contenido(estado, { montoSugerido, precioActual, activa }) {
         detalle: activa
           ? `Ofertá al menos ${formatoARS(montoSugerido)} para volver a liderar.`
           : 'Otra oferta quedó por encima de la tuya.'
+      };
+    case 'invitado':
+      return {
+        titulo: 'Estás viendo como invitado',
+        detalle: activa
+          ? 'Iniciá sesión para poder ofertar en esta subasta.'
+          : 'Iniciá sesión para ver el detalle de tu participación.'
       };
     case 'sinOfertar':
     default:

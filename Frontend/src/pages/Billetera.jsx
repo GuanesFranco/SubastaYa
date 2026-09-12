@@ -17,6 +17,7 @@ const MONTOS_RAPIDOS = [10000, 50000, 100000];
 const TIPOS = {
   Deposito: { etiqueta: 'Depósito', signo: '+', clase: 'ingreso' },
   Liberacion: { etiqueta: 'Liberación', signo: '+', clase: 'ingreso' },
+  Credito: { etiqueta: 'Venta cobrada', signo: '+', clase: 'ingreso' },
   Retencion: { etiqueta: 'Retención', signo: '−', clase: 'retencion' },
   Debito: { etiqueta: 'Débito', signo: '−', clase: 'egreso' }
 };
