@@ -47,7 +47,7 @@ public static class DbInitializer
             "Notebook con procesador de última generación, 16GB de RAM y placa dedicada. Usada tres meses, con caja y garantía vigente.",
             "https://picsum.photos/seed/notebook/600/400",
             precioBase: 30_000m, incrementoMinimo: 1_000m,
-            fechaInicio: ahora.AddMinutes(-30), fechaFin: ahora.AddMinutes(25));
+            fechaInicio: ahora.AddMinutes(-30), fechaFin: ahora.AddHours(2));
         subastaEstandar.Activar();
 
         var subastaCritica = new Subasta(
