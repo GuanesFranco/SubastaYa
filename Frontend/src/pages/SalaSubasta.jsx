@@ -348,18 +348,6 @@ export default function SalaSubasta() {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes pulse {
-          0% { box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0.7); }
-          50% { box-shadow: inset 0 0 20px 5px rgba(239, 68, 68, 0.3); }
-          100% { box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0.7); }
-        }
-        @keyframes slideIn {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }
