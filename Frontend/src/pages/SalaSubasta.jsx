@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import api from '../services/api';
 import useAuth from '../hooks/useAuth';
 import useTitulo from '../hooks/useTitulo';
@@ -10,6 +10,7 @@ import useAuctionHub from '../hooks/useAuctionHub';
 import useRecurso from '../hooks/useRecurso';
 import Skeleton from '../components/Skeleton';
 import EstadoError from '../components/EstadoError';
+import EstadoVacio from '../components/EstadoVacio';
 import EncabezadoSubasta from '../components/sala/EncabezadoSubasta';
 import PanelEstadoParticipante from '../components/sala/PanelEstadoParticipante';
 import PanelCierre from '../components/sala/PanelCierre';
@@ -24,9 +25,10 @@ const DURACION_EXITO = 1800;
 
 function Sala({ subastaId }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const toast = useToast();
-  const usuarioId = user.usuarioId;
+  const usuarioId = user ? user.usuarioId : null;
 
   const [subasta, setSubasta] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,8 +55,8 @@ function Sala({ subastaId }) {
   const exitoTimerRef = useRef(null);
 
   const saldo = useRecurso(
-    (signal) => api.get('/wallets/me', { signal }).then((res) => res.data),
-    [subastaId]
+    (signal) => (user ? api.get('/wallets/me', { signal }).then((res) => res.data) : Promise.resolve(null)),
+    [subastaId, usuarioId]
   );
 
   useEffect(() => () => clearTimeout(exitoTimerRef.current), []);
@@ -230,7 +232,8 @@ function Sala({ subastaId }) {
   const montoPuja = montoManual ?? montoSugerido;
 
   let estadoParticipante = 'sinOfertar';
-  if (esVendedor) estadoParticipante = 'vendedor';
+  if (!user) estadoParticipante = 'invitado';
+  else if (esVendedor) estadoParticipante = 'vendedor';
   else if (liderando) estadoParticipante = 'liderando';
   else if (superado) estadoParticipante = 'superado';
 
@@ -276,8 +279,8 @@ function Sala({ subastaId }) {
 
           {cierreEfectivo ? (
             <PanelCierre cierre={cierreEfectivo} usuarioId={usuarioId} esVendedor={esVendedor} />
-          ) : (
-            !esVendedor && (
+          ) : !esVendedor ? (
+            user ? (
               <ConsolaPuja
                 monto={montoPuja}
                 montoSugerido={montoSugerido}
@@ -288,8 +291,24 @@ function Sala({ subastaId }) {
                 enviando={pujando}
                 exito={exitoReciente}
               />
+            ) : (
+              <EstadoVacio
+                compacto
+                icono="martillo"
+                titulo="Iniciá sesión para ofertar"
+                descripcion="Necesitás una cuenta para participar de esta subasta."
+                accion={
+                  <Link
+                    to="/login"
+                    state={{ from: location.pathname + location.search }}
+                    className="btn btn-primary btn-sm"
+                  >
+                    Iniciar sesión
+                  </Link>
+                }
+              />
             )
-          )}
+          ) : null}
 
           <HistorialPujas
             items={historial.items}

@@ -6,6 +6,7 @@ import useToast from '../hooks/useToast';
 import useTitulo from '../hooks/useTitulo';
 import { aDatetimeLocal, describirDuracion, formatoARS } from '../utils/formato';
 import { mensajeDeError, TIPOS_ERROR } from '../utils/errores';
+import SelectorImagen from '../components/SelectorImagen';
 import './CrearSubasta.css';
 
 const CAMPOS_INICIALES = {
@@ -34,7 +35,7 @@ function validar(f) {
   const errores = {};
   if (f.titulo.trim().length < 3) errores.titulo = 'Poné un título de al menos 3 caracteres.';
   if (!f.categoriaId) errores.categoriaId = 'Elegí una categoría.';
-  if (!f.urlImagen.trim()) errores.urlImagen = 'Pegá la URL de una imagen.';
+  if (!f.urlImagen.trim()) errores.urlImagen = 'Elegí una imagen de la galería o pegá una URL.';
   else if (!esUrlValida(f.urlImagen.trim())) errores.urlImagen = 'La URL tiene que empezar con http:// o https://.';
   if (!(Number(f.precioBase) > 0)) errores.precioBase = 'El precio base tiene que ser mayor a 0.';
   if (!(Number(f.incrementoMinimo) > 0)) errores.incrementoMinimo = 'El incremento tiene que ser mayor a 0.';
@@ -72,6 +73,13 @@ export default function CrearSubasta() {
     setErrores((prev) => ({ ...prev, [name]: '' }));
     setErrorGeneral('');
     if (name === 'urlImagen') setPreviewRota(false);
+  };
+
+  const elegirImagen = (url) => {
+    setFormData((prev) => ({ ...prev, urlImagen: url }));
+    setErrores((prev) => ({ ...prev, urlImagen: '' }));
+    setErrorGeneral('');
+    setPreviewRota(false);
   };
 
   const handleSubmit = async (e) => {
@@ -190,8 +198,23 @@ export default function CrearSubasta() {
               {categorias.error && <p className="form-error">No pudimos cargar las categorías. <button type="button" className="publicar__link" onClick={categorias.recargar}>Reintentar</button></p>}
             </div>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="campo-urlImagen">URL de la imagen</label>
+            <div className="form-group form-grid__completo">
+              <span className="form-label" id="etiqueta-galeria">Imagen</span>
+              <p className="form-hint publicar__ayuda-galeria" id="ayuda-galeria">
+                Elegí una de la galería{formData.categoriaId ? ', filtrada por la categoría que marcaste' : ''}. Son fotos de producto sobre fondo neutro, para que el catálogo quede parejo.
+              </p>
+              <SelectorImagen
+                categoriaId={Number(formData.categoriaId) || null}
+                valor={formData.urlImagen.trim()}
+                onElegir={elegirImagen}
+                describedBy="ayuda-galeria"
+              />
+            </div>
+
+            <div className="form-group form-grid__completo">
+              <label className="form-label" htmlFor="campo-urlImagen">
+                ¿No encontrás lo que buscás? Pegá una URL <span className="publicar__opcional">opcional si ya elegiste de la galería</span>
+              </label>
               <input
                 id="campo-urlImagen"
                 type="url"

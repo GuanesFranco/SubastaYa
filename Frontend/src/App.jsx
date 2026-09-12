@@ -52,11 +52,7 @@ function AppRoutes() {
               <Billetera />
             </ProtectedRoute>
           } />
-          <Route path="/subasta/:id" element={
-            <ProtectedRoute>
-              <SalaSubasta />
-            </ProtectedRoute>
-          } />
+          <Route path="/subasta/:id" element={<SalaSubasta />} />
           <Route path="/mis-actividades" element={
             <ProtectedRoute>
               <MisActividades />
