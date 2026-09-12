@@ -43,7 +43,8 @@ builder.Services.AddCors(opciones =>
     opciones.AddPolicy("frontend", politica => politica
         .WithOrigins("http://localhost:5173")
         .AllowAnyHeader()
-        .AllowAnyMethod()));
+        .AllowAnyMethod()
+        .AllowCredentials()));
 
 builder.Services.AddSwaggerGen(c =>
 {

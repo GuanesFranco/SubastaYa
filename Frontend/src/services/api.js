@@ -29,11 +29,13 @@ api.interceptors.response.use(
         return Promise.reject(new Error('Sesión expirada. Por favor, inicia sesión nuevamente.'));
       }
 
-      const data = error.response.data;
+      const data = error.response.data || {};
       
       if (data.errors) {
         const firstErrorKey = Object.keys(data.errors)[0];
-        return Promise.reject(new Error(data.errors[firstErrorKey][0]));
+        const validationError = new Error(data.errors[firstErrorKey][0]);
+        validationError.status = error.response.status;
+        return Promise.reject(validationError);
       }
 
       if (data.detail) {

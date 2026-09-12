@@ -8,5 +8,6 @@ public record MisPujasDto(
     string UrlImagen,
     decimal PrecioActual,
     EstadoSubasta Estado,
-    bool EsGanador
+    bool EsGanador,
+    DateTime FechaFin
 );

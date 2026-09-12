@@ -55,7 +55,7 @@ export default function SalaSubasta() {
 
   const setupSignalR = async () => {
     // Usamos el host de la API para el hub
-    const hubUrl = api.defaults.baseURL.replace('/api', '') + '/hubs/auctions';
+    const hubUrl = api.defaults.baseURL.replace('/api/v1', '') + '/hubs/auctions';
     
     const conn = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {

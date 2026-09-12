@@ -99,7 +99,6 @@ export default function Billetera() {
         </div>
       </div>
 
-      <h3 style={{ marginBottom: '1rem' }}>Últimos Movimientos</h3>
       
       {error && <div className="alert alert-danger">{error}</div>}
 
