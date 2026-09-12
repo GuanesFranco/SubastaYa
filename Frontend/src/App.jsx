@@ -5,6 +5,9 @@ import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import CrearSubasta from './pages/CrearSubasta';
+import Billetera from './pages/Billetera';
+import SalaSubasta from './pages/SalaSubasta';
+import MisActividades from './pages/MisActividades';
 
 // Componente para proteger rutas que requieren estar logueado
 const ProtectedRoute = ({ children }) => {
@@ -30,17 +33,29 @@ function AppRoutes() {
             <Login />
           </GuestRoute>
         } />
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        } />
+        <Route path="/" element={<Home />} />
         <Route path="/publicar" element={
           <ProtectedRoute>
             <CrearSubasta />
           </ProtectedRoute>
         } />
+        <Route path="/billetera" element={
+          <ProtectedRoute>
+            <Billetera />
+          </ProtectedRoute>
+        } />
+        <Route path="/subasta/:id" element={
+          <ProtectedRoute>
+            <SalaSubasta />
+          </ProtectedRoute>
+        } />
+        <Route path="/mis-actividades" element={
+          <ProtectedRoute>
+            <MisActividades />
+          </ProtectedRoute>
+        } />
         {/* Agregaremos más rutas a medida que avancemos */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
   );

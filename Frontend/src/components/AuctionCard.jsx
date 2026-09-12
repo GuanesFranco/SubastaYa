@@ -19,13 +19,13 @@ export default function AuctionCard({ auction }) {
          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
     >
-      <div style={{ height: '200px', width: '100%', backgroundColor: 'rgba(0,0,0,0.5)', backgroundImage: `url(${auction.imagenUrl || 'https://picsum.photos/600/400?random=' + auction.id})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div style={{ height: '200px', width: '100%', backgroundColor: 'rgba(0,0,0,0.5)', backgroundImage: `url(${auction.urlImagen || 'https://picsum.photos/600/400?random=' + auction.id})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
       </div>
       
       <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 'bold', textTransform: 'uppercase' }}>
-            {auction.categoria?.nombre || 'General'}
+            {auction.categoriaNombre || 'General'}
           </span>
           <span style={{ fontSize: '0.8rem', color: statusColor, fontWeight: 'bold', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', borderRadius: '1rem' }}>
             {auction.estado}
@@ -36,6 +36,10 @@ export default function AuctionCard({ auction }) {
           {auction.titulo}
         </h3>
         
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+          {auction.cantidadPujas !== undefined ? `${auction.cantidadPujas} oferta(s)` : ''}
+        </p>
+
         <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Precio Actual</p>

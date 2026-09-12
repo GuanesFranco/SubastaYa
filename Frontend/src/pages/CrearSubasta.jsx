@@ -12,7 +12,7 @@ export default function CrearSubasta() {
     categoriaId: '',
     titulo: '',
     descripcion: '',
-    imagenUrl: '',
+    urlImagen: '',
     precioBase: '',
     incrementoMinimo: '',
     fechaInicio: '',
@@ -32,13 +32,13 @@ export default function CrearSubasta() {
   };
 
   const validateForm = () => {
-    if (!formData.categoriaId || !formData.titulo || !formData.precioBase || !formData.fechaInicio || !formData.fechaFin) {
-      setError('Por favor, completa todos los campos requeridos.');
+    if (!formData.categoriaId || !formData.titulo || !formData.precioBase || !formData.fechaInicio || !formData.fechaFin || !formData.incrementoMinimo) {
+      setError('Por favor, completa todos los campos requeridos (incluyendo el incremento).');
       return false;
     }
 
-    if (Number(formData.precioBase) <= 0) {
-      setError('El precio base debe ser mayor a 0.');
+    if (Number(formData.precioBase) <= 0 || Number(formData.incrementoMinimo) <= 0) {
+      setError('Los precios e incrementos deben ser mayores a 0.');
       return false;
     }
 
@@ -73,12 +73,10 @@ export default function CrearSubasta() {
         ...formData,
         categoriaId: Number(formData.categoriaId),
         precioBase: Number(formData.precioBase),
-        incrementoMinimo: formData.incrementoMinimo ? Number(formData.incrementoMinimo) : null
+        incrementoMinimo: Number(formData.incrementoMinimo)
       };
 
-      // Si no puso URL de imagen, la borramos para que use un default si quiere
-      if (!payload.imagenUrl) delete payload.imagenUrl;
-      if (!payload.incrementoMinimo) delete payload.incrementoMinimo;
+      if (!payload.urlImagen) delete payload.urlImagen;
 
       const response = await api.post('/auctions', payload);
       
@@ -133,8 +131,8 @@ export default function CrearSubasta() {
             <div className="form-group">
               <label className="form-label">URL de Imagen (Opcional)</label>
               <input 
-                type="url" name="imagenUrl" className="input-field" 
-                value={formData.imagenUrl} onChange={handleChange} 
+                type="url" name="urlImagen" className="input-field" 
+                value={formData.urlImagen} onChange={handleChange} 
                 placeholder="https://..."
               />
             </div>
@@ -148,10 +146,10 @@ export default function CrearSubasta() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Incremento Mínimo ($) (Opcional)</label>
+              <label className="form-label">Incremento Mínimo ($) *</label>
               <input 
                 type="number" name="incrementoMinimo" className="input-field" 
-                value={formData.incrementoMinimo} onChange={handleChange} min="1" step="0.01"
+                value={formData.incrementoMinimo} onChange={handleChange} min="0.01" step="0.01" required
               />
             </div>
 

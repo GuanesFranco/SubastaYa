@@ -11,6 +11,9 @@ export default function Home() {
   // Filtros
   const [categoriaId, setCategoriaId] = useState('');
   const [estado, setEstado] = useState('Activa');
+  const [precioMin, setPrecioMin] = useState('');
+  const [precioMax, setPrecioMax] = useState('');
+  const [orden, setOrden] = useState('');
 
   const fetchCategorias = async () => {
     try {
@@ -29,6 +32,9 @@ export default function Home() {
       let url = '/auctions?pageSize=20';
       if (categoriaId) url += `&categoriaId=${categoriaId}`;
       if (estado) url += `&estado=${estado}`;
+      if (precioMin) url += `&precioMin=${precioMin}`;
+      if (precioMax) url += `&precioMax=${precioMax}`;
+      if (orden) url += `&orden=${orden}`;
 
       // Subastas SI vienen paginadas
       const response = await api.get(url);
@@ -47,40 +53,50 @@ export default function Home() {
   useEffect(() => {
     fetchSubastas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoriaId, estado]);
+  }, [categoriaId, estado, orden]);
+
+  const aplicarFiltrosPrecios = (e) => {
+    e.preventDefault();
+    fetchSubastas();
+  };
 
   return (
     <div className="layout-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Catálogo de Subastas</h1>
-        
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <select 
-            className="input-field" 
-            style={{ width: 'auto' }}
-            value={categoriaId} 
-            onChange={(e) => setCategoriaId(e.target.value)}
-          >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h1 style={{ margin: 0 }}>Catálogo de Subastas</h1>
+      </div>
+
+      <div className="glass-panel" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '2rem', padding: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', flexGrow: 1 }}>
+          <select className="input-field" style={{ width: 'auto', minWidth: '180px' }} value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
             <option value="">Todas las Categorías</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.nombre}</option>
-            ))}
+            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
           </select>
           
-          <select 
-            className="input-field" 
-            style={{ width: 'auto' }}
-            value={estado} 
-            onChange={(e) => setEstado(e.target.value)}
-          >
-            {/* Los enums van como strings literales */}
+          <select className="input-field" style={{ width: 'auto', minWidth: '180px' }} value={estado} onChange={(e) => setEstado(e.target.value)}>
             <option value="">Todos los Estados</option>
             <option value="Activa">Activas</option>
             <option value="Programada">Programadas</option>
             <option value="Finalizada">Finalizadas</option>
             <option value="Desierta">Desiertas</option>
           </select>
+
+          <select className="input-field" style={{ width: 'auto', minWidth: '200px' }} value={orden} onChange={(e) => setOrden(e.target.value)}>
+            <option value="">Orden (Por Defecto)</option>
+            <option value="fechaFin_asc">Próximas a cerrar</option>
+            <option value="fechaFin_desc">Cierre lejano</option>
+            <option value="precio_asc">Menor precio</option>
+            <option value="precio_desc">Mayor precio</option>
+          </select>
         </div>
+
+        <form onSubmit={aplicarFiltrosPrecios} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginRight: '0.5rem' }}>Precio:</span>
+          <input type="number" placeholder="Min $" className="input-field" style={{ width: '100px' }} value={precioMin} onChange={(e) => setPrecioMin(e.target.value)} />
+          <span style={{ color: 'var(--text-muted)' }}>-</span>
+          <input type="number" placeholder="Max $" className="input-field" style={{ width: '100px' }} value={precioMax} onChange={(e) => setPrecioMax(e.target.value)} />
+          <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1rem', marginLeft: '0.5rem' }}>Filtrar</button>
+        </form>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
