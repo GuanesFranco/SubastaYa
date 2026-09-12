@@ -34,7 +34,7 @@ export default function Home() {
       if (estado) url += `&estado=${estado}`;
       if (precioMin) url += `&precioMin=${precioMin}`;
       if (precioMax) url += `&precioMax=${precioMax}`;
-      if (orden) url += `&orden=${orden}`;
+      if (orden) url += `&orderBy=${orden}`;
 
       // Subastas SI vienen paginadas
       const response = await api.get(url);
@@ -83,8 +83,8 @@ export default function Home() {
 
           <select className="input-field" style={{ width: 'auto', minWidth: '200px' }} value={orden} onChange={(e) => setOrden(e.target.value)}>
             <option value="">Orden (Por Defecto)</option>
-            <option value="fechaFin_asc">Próximas a cerrar</option>
-            <option value="fechaFin_desc">Cierre lejano</option>
+            <option value="fecha_asc">Próximas a cerrar</option>
+            <option value="fecha_desc">Cierre lejano</option>
             <option value="precio_asc">Menor precio</option>
             <option value="precio_desc">Mayor precio</option>
           </select>

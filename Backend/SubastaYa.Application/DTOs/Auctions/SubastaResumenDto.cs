@@ -10,5 +10,6 @@ public record SubastaResumenDto(
     DateTime FechaFin,
     SubastaYa.Domain.Enums.EstadoSubasta Estado,
     string CategoriaNombre,
-    int CantidadPujas
+    int CantidadPujas,
+    decimal? MontoFinal
 );
