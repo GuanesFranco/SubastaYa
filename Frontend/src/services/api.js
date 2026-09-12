@@ -33,6 +33,14 @@ api.interceptors.response.use(
       if (data.detail) {
         return Promise.reject(new Error(data.detail));
       }
+
+      // Token vencido o inválido
+      if (error.response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(new Error('Sesión expirada. Por favor, inicia sesión nuevamente.'));
+      }
     }
     
     // Error genérico (red, timeout, etc)
