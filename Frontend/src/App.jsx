@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import AuthProvider from './context/AuthContext';
+import AuthProvider from './context/AuthProvider';
 import useAuth from './hooks/useAuth';
 import ToastProvider from './components/ToastProvider';
 import Navbar from './components/Navbar';
