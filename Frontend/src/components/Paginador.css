@@ -1,0 +1,70 @@
+.paginador {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.paginador__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.paginador__boton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.paginador__boton:hover:not(:disabled) {
+  border-color: var(--glass-border-strong);
+  background: var(--surface-raised);
+}
+
+.paginador__boton:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.paginador__boton:disabled {
+  background: transparent;
+  color: var(--text-subtle);
+  cursor: not-allowed;
+}
+
+.paginador__info {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.paginador__info strong {
+  color: var(--text-main);
+}
+
+@media (max-width: 640px) {
+  .paginador {
+    gap: var(--space-3);
+  }
+
+  .paginador__info {
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+
+  .paginador__total {
+    display: none;
+  }
+}

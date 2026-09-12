@@ -189,6 +189,23 @@ a {
   color: white;
 }
 
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text-main);
+  border-color: var(--glass-border-strong);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-sm {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+}
+
 .input-field {
   width: 100%;
   padding: var(--space-3) var(--space-4);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import AuctionCard from '../components/AuctionCard';
 import Paginador from '../components/Paginador';
@@ -8,21 +8,73 @@ import EstadoVacio from '../components/EstadoVacio';
 import EstadoError from '../components/EstadoError';
 import useRecurso from '../hooks/useRecurso';
 import { plural } from '../utils/formato';
+import './Home.css';
 
 const PAGE_SIZE = 12;
+const ESTADO_POR_DEFECTO = 'Activa';
+const TODOS_LOS_ESTADOS = 'todos';
 
-const FILTROS_INICIALES = {
-  categoriaId: '',
-  estado: 'Activa',
-  orden: '',
-  precioMin: '',
-  precioMax: ''
+const PARAMS = {
+  categoria: 'categoria',
+  estado: 'estado',
+  orden: 'orden',
+  min: 'min',
+  max: 'max',
+  pagina: 'pagina'
 };
 
+function leerFiltros(searchParams) {
+  const estado = searchParams.get(PARAMS.estado);
+  return {
+    categoriaId: searchParams.get(PARAMS.categoria) || '',
+    estado: estado === null ? ESTADO_POR_DEFECTO : estado,
+    orden: searchParams.get(PARAMS.orden) || '',
+    precioMin: searchParams.get(PARAMS.min) || '',
+    precioMax: searchParams.get(PARAMS.max) || ''
+  };
+}
+
+function leerPagina(searchParams) {
+  const valor = parseInt(searchParams.get(PARAMS.pagina), 10);
+  return Number.isNaN(valor) || valor < 1 ? 1 : valor;
+}
+
 export default function Home() {
-  const [page, setPage] = useState(1);
-  const [filtros, setFiltros] = useState(FILTROS_INICIALES);
-  const [precios, setPrecios] = useState({ min: '', max: '' });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filtros = leerFiltros(searchParams);
+  const page = leerPagina(searchParams);
+
+  const [precios, setPrecios] = useState(() => ({ min: filtros.precioMin, max: filtros.precioMax }));
+
+  const actualizarParams = (cambios, { reiniciarPagina = true } = {}) => {
+    setSearchParams((prev) => {
+      const siguiente = new URLSearchParams(prev);
+      Object.entries(cambios).forEach(([clave, valor]) => {
+        if (valor === '' || valor === null || valor === undefined) siguiente.delete(clave);
+        else siguiente.set(clave, String(valor));
+      });
+      if (reiniciarPagina) siguiente.delete(PARAMS.pagina);
+      return siguiente;
+    });
+  };
+
+  const cambiarPagina = (destino) => {
+    actualizarParams({ [PARAMS.pagina]: destino === 1 ? '' : destino }, { reiniciarPagina: false });
+  };
+
+  const cambiarEstado = (valor) => {
+    actualizarParams({ [PARAMS.estado]: valor === ESTADO_POR_DEFECTO ? '' : valor });
+  };
+
+  const aplicarPrecios = (e) => {
+    e.preventDefault();
+    actualizarParams({ [PARAMS.min]: precios.min, [PARAMS.max]: precios.max });
+  };
+
+  const limpiarFiltros = () => {
+    setPrecios({ min: '', max: '' });
+    setSearchParams({});
+  };
 
   const categorias = useRecurso(
     (signal) => api.get('/categories', { signal }).then((res) => res.data || []),
@@ -32,35 +84,24 @@ export default function Home() {
   const subastas = useRecurso(async (signal) => {
     const params = { page, pageSize: PAGE_SIZE };
     if (filtros.categoriaId) params.categoriaId = filtros.categoriaId;
-    if (filtros.estado) params.estado = filtros.estado;
+    if (filtros.estado && filtros.estado !== TODOS_LOS_ESTADOS) params.estado = filtros.estado;
     if (filtros.precioMin) params.precioMin = filtros.precioMin;
     if (filtros.precioMax) params.precioMax = filtros.precioMax;
     if (filtros.orden) params.orderBy = filtros.orden;
 
     const res = await api.get('/auctions', { params, signal });
     const paginas = res.data.totalPages || 0;
-    if (paginas > 0 && page > paginas) setPage(paginas);
+    if (paginas > 0 && page > paginas) cambiarPagina(paginas);
     return res.data;
   }, [page, filtros]);
 
-  const cambiarFiltro = (campo, valor) => {
-    setFiltros((prev) => ({ ...prev, [campo]: valor }));
-    setPage(1);
-  };
-
-  const aplicarPrecios = (e) => {
-    e.preventDefault();
-    setFiltros((prev) => ({ ...prev, precioMin: precios.min, precioMax: precios.max }));
-    setPage(1);
-  };
-
-  const limpiarFiltros = () => {
-    setFiltros(FILTROS_INICIALES);
-    setPrecios({ min: '', max: '' });
-    setPage(1);
-  };
-
-  const hayFiltrosActivos = Object.keys(FILTROS_INICIALES).some((campo) => filtros[campo] !== FILTROS_INICIALES[campo]);
+  const hayFiltrosActivos = Boolean(
+    filtros.categoriaId
+    || filtros.estado !== ESTADO_POR_DEFECTO
+    || filtros.orden
+    || filtros.precioMin
+    || filtros.precioMax
+  );
 
   const items = subastas.datos ? subastas.datos.items || [] : [];
   const totalPages = subastas.datos ? subastas.datos.totalPages || 0 : 0;
@@ -104,7 +145,7 @@ export default function Home() {
           page={page}
           totalPages={totalPages}
           totalItems={totalItems}
-          onChange={setPage}
+          onChange={cambiarPagina}
           disabled={subastas.ocupado}
         />
       </>
@@ -112,23 +153,20 @@ export default function Home() {
   };
 
   return (
-    <div className="layout-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <h1 style={{ margin: 0 }}>Catálogo de Subastas</h1>
+    <div className="layout-container catalogo">
+      <div className="catalogo__encabezado">
+        <h1>Catálogo de Subastas</h1>
         {subastas.datos && items.length > 0 && (
-          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-            {plural(totalItems, 'subasta', 'subastas')}
-          </span>
+          <span className="catalogo__total">{plural(totalItems, 'subasta', 'subastas')}</span>
         )}
       </div>
 
-      <div className="glass-panel" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '2rem', padding: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', flexGrow: 1 }}>
+      <div className="glass-panel filtros">
+        <div className="filtros__grupo">
           <select
             className="input-field"
-            style={{ width: 'auto', minWidth: '180px' }}
             value={filtros.categoriaId}
-            onChange={(e) => cambiarFiltro('categoriaId', e.target.value)}
+            onChange={(e) => actualizarParams({ [PARAMS.categoria]: e.target.value })}
             disabled={categorias.cargando}
             aria-label="Categoría"
           >
@@ -138,12 +176,11 @@ export default function Home() {
 
           <select
             className="input-field"
-            style={{ width: 'auto', minWidth: '180px' }}
             value={filtros.estado}
-            onChange={(e) => cambiarFiltro('estado', e.target.value)}
+            onChange={(e) => cambiarEstado(e.target.value)}
             aria-label="Estado"
           >
-            <option value="">Todos los estados</option>
+            <option value={TODOS_LOS_ESTADOS}>Todos los estados</option>
             <option value="Activa">Activas</option>
             <option value="Programada">Programadas</option>
             <option value="Finalizada">Finalizadas</option>
@@ -152,9 +189,8 @@ export default function Home() {
 
           <select
             className="input-field"
-            style={{ width: 'auto', minWidth: '200px' }}
             value={filtros.orden}
-            onChange={(e) => cambiarFiltro('orden', e.target.value)}
+            onChange={(e) => actualizarParams({ [PARAMS.orden]: e.target.value })}
             aria-label="Orden"
           >
             <option value="">Orden por defecto</option>
@@ -165,32 +201,30 @@ export default function Home() {
           </select>
         </div>
 
-        <form onSubmit={aplicarPrecios} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginRight: '0.5rem' }}>Precio:</span>
+        <form onSubmit={aplicarPrecios} className="filtros__precio">
+          <span className="filtros__etiqueta">Precio</span>
           <input
             type="number"
             placeholder="Mín $"
             className="input-field"
-            style={{ width: '100px' }}
             value={precios.min}
             onChange={(e) => setPrecios((prev) => ({ ...prev, min: e.target.value }))}
             min="0"
             aria-label="Precio mínimo"
           />
-          <span style={{ color: 'var(--text-muted)' }}>-</span>
+          <span className="filtros__separador" aria-hidden="true">–</span>
           <input
             type="number"
             placeholder="Máx $"
             className="input-field"
-            style={{ width: '100px' }}
             value={precios.max}
             onChange={(e) => setPrecios((prev) => ({ ...prev, max: e.target.value }))}
             min="0"
             aria-label="Precio máximo"
           />
-          <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1rem', marginLeft: '0.5rem' }}>Filtrar</button>
+          <button type="submit" className="btn btn-primary btn-sm">Filtrar</button>
           {hayFiltrosActivos && (
-            <button type="button" className="btn" onClick={limpiarFiltros} style={{ padding: '0.6rem 1rem', background: 'transparent', color: 'var(--text-muted)' }}>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={limpiarFiltros}>
               Limpiar
             </button>
           )}

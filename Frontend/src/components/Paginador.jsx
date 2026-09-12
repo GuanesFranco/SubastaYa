@@ -1,4 +1,6 @@
 import React from 'react';
+import { plural } from '../utils/formato';
+import './Paginador.css';
 
 export default function Paginador({ page, totalPages, totalItems, onChange, disabled = false }) {
   if (!totalPages || totalPages <= 1) return null;
@@ -11,45 +13,38 @@ export default function Paginador({ page, totalPages, totalItems, onChange, disa
     if (objetivo !== page) onChange(objetivo);
   };
 
-  const estiloBoton = (habilitado) => ({
-    padding: '0.5rem 1.2rem',
-    background: habilitado ? 'var(--glass-bg)' : 'transparent',
-    border: '1px solid var(--glass-border)',
-    borderRadius: 'var(--radius-md)',
-    color: habilitado ? 'var(--text-main)' : 'var(--text-muted)',
-    cursor: habilitado ? 'pointer' : 'not-allowed',
-    opacity: habilitado ? 1 : 0.4
-  });
-
   return (
-    <div style={{
-      display: 'flex', justifyContent: 'center', alignItems: 'center',
-      gap: '1rem', marginTop: '2rem', flexWrap: 'wrap'
-    }}>
+    <nav className="paginador" aria-label="Paginación" aria-busy={disabled}>
       <button
         type="button"
-        className="btn"
-        style={estiloBoton(hayAnterior)}
+        className="paginador__boton"
         disabled={!hayAnterior}
         onClick={() => irA(page - 1)}
       >
-        ← Anterior
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M12 5l-5 5 5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Anterior
       </button>
 
-      <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-        Página <strong style={{ color: 'var(--text-main)' }}>{page}</strong> de {totalPages}
-        {typeof totalItems === 'number' && ` · ${totalItems} resultado${totalItems === 1 ? '' : 's'}`}
+      <span className="paginador__info">
+        Página <strong>{page}</strong> de {totalPages}
+        {typeof totalItems === 'number' && (
+          <span className="paginador__total"> · {plural(totalItems, 'resultado', 'resultados')}</span>
+        )}
       </span>
 
       <button
         type="button"
-        className="btn"
-        style={estiloBoton(haySiguiente)}
+        className="paginador__boton"
         disabled={!haySiguiente}
         onClick={() => irA(page + 1)}
       >
-        Siguiente →
+        Siguiente
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M8 5l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
-    </div>
+    </nav>
   );
 }

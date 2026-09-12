@@ -1,83 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import CountdownTimer from './CountdownTimer';
 import { formatoARS, plural } from '../utils/formato';
+import './AuctionCard.css';
+
+const ETIQUETA_ESTADO = {
+  Activa: 'En vivo',
+  Programada: 'Próximamente',
+  Finalizada: 'Finalizada',
+  Desierta: 'Desierta'
+};
+
+const ETIQUETA_PRECIO = {
+  Activa: 'Precio actual',
+  Programada: 'Precio inicial',
+  Finalizada: 'Precio final',
+  Desierta: 'Precio base'
+};
 
 export default function AuctionCard({ auction }) {
-  const isActive = auction.estado === 'Activa';
-  const isScheduled = auction.estado === 'Programada';
+  const [imagenRota, setImagenRota] = useState(false);
 
-  const statusColor = isActive ? 'var(--success)' : (isScheduled ? 'var(--warning)' : 'var(--text-muted)');
-
-  const [tiempoRestante, setTiempoRestante] = useState('');
-
-  useEffect(() => {
-    if (!auction.fechaFin || auction.estado !== 'Activa') return;
-    
-    const fechaFinObj = new Date(auction.fechaFin);
-    const interval = setInterval(() => {
-      const diff = fechaFinObj.getTime() - Date.now();
-      if (diff <= 0) {
-        setTiempoRestante('Finalizando...');
-        return;
-      }
-      
-      const horas = Math.floor(diff / (1000 * 60 * 60));
-      const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const segundos = Math.floor((diff % (1000 * 60)) / 1000);
-      
-      setTiempoRestante(`${horas}h ${minutos}m ${segundos}s`);
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [auction.fechaFin, auction.estado]);
+  const estado = auction.estado;
+  const mostrarImagen = Boolean(auction.urlImagen) && !imagenRota;
+  const inicial = (auction.categoriaNombre || auction.titulo || 'S').trim().charAt(0).toUpperCase();
+  const precio = auction.montoFinal ?? auction.precioActual ?? auction.precioBase ?? 0;
+  const tieneConteo = auction.cantidadPujas !== undefined && auction.cantidadPujas !== null;
 
   return (
-    <div className="glass-panel" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%', transition: 'transform 0.2s', cursor: 'pointer' }}
-         onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-         onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-    >
-      <div style={{ height: '200px', width: '100%', backgroundColor: 'rgba(0,0,0,0.5)', backgroundImage: `url(${auction.urlImagen || 'https://loremflickr.com/600/400/auction?lock=' + auction.id})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <Link to={`/subasta/${auction.id}`} className="auction-card" data-estado={estado}>
+      <div className="auction-card__media">
+        {mostrarImagen ? (
+          <img
+            className="auction-card__imagen"
+            src={auction.urlImagen}
+            alt=""
+            loading="lazy"
+            onError={() => setImagenRota(true)}
+          />
+        ) : (
+          <div className="auction-card__fallback" aria-hidden="true">{inicial}</div>
+        )}
+
+        <span className="auction-card__estado">
+          <span className="auction-card__punto" aria-hidden="true" />
+          {ETIQUETA_ESTADO[estado] || estado}
+        </span>
+
+        {auction.esGanador && (
+          <span className="auction-card__ganaste">Ganaste</span>
+        )}
       </div>
-      
-      <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 'bold', textTransform: 'uppercase' }}>
-            {auction.categoriaNombre || 'General'}
-          </span>
-          <span style={{ fontSize: '0.8rem', color: statusColor, fontWeight: 'bold', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', borderRadius: '1rem' }}>
-            {auction.estado}
-          </span>
-        </div>
-        
-        <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text-main)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          {auction.titulo}
-        </h3>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            {auction.cantidadPujas !== undefined ? plural(auction.cantidadPujas, 'oferta', 'ofertas', 'Sin ofertas') : ''}
-            {tiempoRestante && <span style={{ marginLeft: '1rem', color: 'var(--text-main)' }}>⏱ {tiempoRestante}</span>}
-          </p>
-          {auction.esGanador && (
-            <span style={{ fontSize: '0.8rem', background: 'var(--success)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontWeight: 'bold' }}>
-              ¡Ganaste! 🏆
-            </span>
-          )}
+
+      <div className="auction-card__cuerpo">
+        <span className="auction-card__categoria">{auction.categoriaNombre || 'General'}</span>
+        <h3 className="auction-card__titulo">{auction.titulo}</h3>
+
+        <div className="auction-card__precio">
+          <span className="auction-card__precio-etiqueta">{ETIQUETA_PRECIO[estado] || 'Precio'}</span>
+          <strong className="auction-card__precio-valor">{formatoARS(precio)}</strong>
         </div>
 
-        <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Precio Actual</p>
-            <p className="tabular" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isActive ? 'var(--success)' : 'var(--text-main)' }}>
-              {formatoARS(auction.precioActual || auction.precioBase)}
-            </p>
-          </div>
-          
-          <Link to={`/subasta/${auction.id}`} className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
-            Ver Detalles
-          </Link>
+        <div className="auction-card__pie">
+          <span className="auction-card__ofertas">
+            {tieneConteo ? plural(auction.cantidadPujas, 'oferta', 'ofertas', 'Sin ofertas') : ''}
+          </span>
+          <CountdownTimer fechaFin={auction.fechaFin} estado={estado} tamano="sm" />
         </div>
       </div>
-    </div>
+
+      <span className="auction-card__cta" aria-hidden="true">
+        Ver subasta
+        <svg viewBox="0 0 20 20">
+          <path d="M4 10h11M11 5l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    </Link>
   );
 }

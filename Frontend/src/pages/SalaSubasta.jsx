@@ -4,8 +4,10 @@ import * as signalR from '@microsoft/signalr';
 import api, { HUB_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import useToast from '../hooks/useToast';
+import useCountdown from '../hooks/useCountdown';
 import Skeleton from '../components/Skeleton';
 import EstadoError from '../components/EstadoError';
+import CountdownTimer from '../components/CountdownTimer';
 import { formatoARS } from '../utils/formato';
 import { mensajeDeError } from '../utils/errores';
 
@@ -29,18 +31,16 @@ export default function SalaSubasta() {
   const [montoPuja, setMontoPuja] = useState('');
   const [pujando, setPujando] = useState(false);
 
-  const [tiempoRestante, setTiempoRestante] = useState('');
-  const [isLastMinute, setIsLastMinute] = useState(false);
-
   const connectionRef = useRef(null);
-  const fechaFinRef = useRef(null);
+
+  const countdown = useCountdown(subasta ? subasta.fechaFin : null, Boolean(subasta) && subasta.estado === 'Activa');
+  const isLastMinute = countdown.ultimoMinuto;
 
   const fetchSubasta = async () => {
     try {
       const res = await api.get(`/auctions/${id}`);
       setSubasta(res.data);
       setErrorCarga(null);
-      fechaFinRef.current = new Date(res.data.fechaFin);
 
       const montoMinimo = (res.data.precioActual || res.data.precioBase) + res.data.incrementoMinimo;
       setMontoPuja(montoMinimo);
@@ -103,7 +103,6 @@ export default function SalaSubasta() {
           fechaFin: evento.fechaFin
         };
       });
-      fechaFinRef.current = new Date(evento.fechaFin);
 
       fetchHistorial();
     });
@@ -142,29 +141,6 @@ export default function SalaSubasta() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!fechaFinRef.current || subasta?.estado !== 'Activa') return;
-
-      const diff = fechaFinRef.current.getTime() - Date.now();
-      if (diff <= 0) {
-        setTiempoRestante('Finalizando...');
-        setIsLastMinute(false);
-        return;
-      }
-
-      setIsLastMinute(diff < 60000);
-
-      const horas = Math.floor(diff / (1000 * 60 * 60));
-      const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const segundos = Math.floor((diff % (1000 * 60)) / 1000);
-
-      setTiempoRestante(`${horas}h ${minutos}m ${segundos}s`);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [subasta?.estado]);
-
   const handlePujar = async (e) => {
     e.preventDefault();
     setPujando(true);
@@ -180,7 +156,6 @@ export default function SalaSubasta() {
         compradorLiderId: user.usuarioId,
         fechaFin: res.data.fechaFin
       }));
-      fechaFinRef.current = new Date(res.data.fechaFin);
 
       setMontoPuja(res.data.monto + subasta.incrementoMinimo);
 
@@ -259,8 +234,8 @@ export default function SalaSubasta() {
             </div>
             <div>
               <p style={{ color: 'var(--text-muted)' }}>Tiempo restante</p>
-              <h2 className="tabular" style={{ fontSize: '3rem', color: isLastMinute ? 'var(--danger)' : 'var(--text-main)' }}>
-                {isActiva ? tiempoRestante : '--:--:--'}
+              <h2 style={{ fontSize: '3rem' }}>
+                <CountdownTimer fechaFin={subasta.fechaFin} estado={subasta.estado} tamano="lg" conIcono={false} />
               </h2>
             </div>
           </div>
