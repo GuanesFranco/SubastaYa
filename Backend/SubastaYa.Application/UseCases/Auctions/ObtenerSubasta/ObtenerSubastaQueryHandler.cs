@@ -34,12 +34,15 @@ public class ObtenerSubastaQueryHandler : IQueryHandler<ObtenerSubastaQuery, Sub
             subasta.UrlImagen,
             subasta.PrecioBase,
             subasta.PrecioActual,
+            subasta.IncrementoMinimo,
             FechaArgentina.ComoUtc(subasta.FechaInicio),
             FechaArgentina.ComoUtc(subasta.FechaFin),
             subasta.Estado,
             subasta.Categoria.Nombre,
+            subasta.VendedorId,
             subasta.Vendedor.Nombre,
-            subasta.PujaLiderId
+            subasta.PujaLiderId,
+            subasta.PujaLider?.CompradorId
         );
     }
 }

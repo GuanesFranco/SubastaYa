@@ -16,7 +16,6 @@ export default function SalaSubasta() {
   // Estado para la puja
   const [montoPuja, setMontoPuja] = useState('');
   const [pujando, setPujando] = useState(false);
-  const [miUltimaPujaId, setMiUltimaPujaId] = useState(null);
 
   // Estados visuales (Toasts y Countdown)
   const [tiempoRestante, setTiempoRestante] = useState('');
@@ -55,21 +54,25 @@ export default function SalaSubasta() {
   };
 
   const setupSignalR = async () => {
+    // Usamos el host de la API para el hub
+    const hubUrl = api.defaults.baseURL.replace('/api', '') + '/hubs/auctions';
+    
     const conn = new signalR.HubConnectionBuilder()
-      .withUrl('http://localhost:5058/hubs/auctions', {
+      .withUrl(hubUrl, {
         accessTokenFactory: () => localStorage.getItem('token')
       })
       .withAutomaticReconnect()
       .build();
 
     conn.on('BidPlaced', (evento) => {
-      // payload = { subastaId, pujaId, monto, fechaPuja, fechaFin }
+      // payload = { subastaId, pujaId, monto, fechaPuja, fechaFin, compradorId }
       setSubasta(prev => {
         if (!prev) return prev;
         return {
           ...prev,
           precioActual: evento.monto,
           pujaLiderId: evento.pujaId,
+          compradorLiderId: evento.compradorId,
           fechaFin: evento.fechaFin // Actualizar por si hubo anti-sniping
         };
       });
@@ -103,8 +106,11 @@ export default function SalaSubasta() {
 
     return () => {
       if (connectionRef.current) {
-        connectionRef.current.invoke('LeaveAuctionGroup', Number(id)).catch(console.error);
-        connectionRef.current.stop();
+        connectionRef.current.invoke('LeaveAuctionGroup', Number(id))
+          .catch(console.error)
+          .finally(() => {
+            connectionRef.current.stop();
+          });
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,13 +152,12 @@ export default function SalaSubasta() {
       // POST devuelve { pujaId, monto, fechaFin, tiempoExtendido }
       const res = await api.post(`/auctions/${id}/bids`, { monto: Number(montoPuja) });
       
-      setMiUltimaPujaId(res.data.pujaId);
-      
       // Actualización optimista local sin esperar SignalR
       setSubasta(prev => ({
         ...prev,
         precioActual: res.data.monto,
         pujaLiderId: res.data.pujaId,
+        compradorLiderId: user.usuarioId,
         fechaFin: res.data.fechaFin
       }));
       fechaFinRef.current = new Date(res.data.fechaFin);
@@ -167,7 +172,7 @@ export default function SalaSubasta() {
       }
 
     } catch (err) {
-      if (err.message.includes('409') || err.message.toLowerCase().includes('concurrencia')) {
+      if (err.status === 409 || err.message?.toLowerCase().includes('concurrencia')) {
         showToast('Otra oferta superó la tuya, actualizá y reintentá.', 'error');
       } else {
         showToast(err.message || 'Error al enviar la oferta.', 'error');
@@ -182,9 +187,9 @@ export default function SalaSubasta() {
   if (loading) return <div className="layout-container" style={{ textAlign: 'center' }}>Cargando subasta...</div>;
   if (!subasta) return <div className="layout-container">Subasta no encontrada.</div>;
 
-  // Lógica inteligente de Liderazgo (como pidió Enzo)
-  const isLiderando = subasta.pujaLiderId && subasta.pujaLiderId === miUltimaPujaId;
-  const isSuperado = miUltimaPujaId && subasta.pujaLiderId && subasta.pujaLiderId !== miUltimaPujaId;
+  // Lógica inteligente de Liderazgo (usando la base de datos y no memoria local)
+  const isLiderando = subasta.compradorLiderId === user.usuarioId;
+  const isSuperado = subasta.compradorLiderId !== null && subasta.compradorLiderId !== user.usuarioId && historial.some(h => h.compradorId === user.usuarioId);
   
   const isActiva = subasta.estado === 'Activa';
 
@@ -216,7 +221,7 @@ export default function SalaSubasta() {
           )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{subasta.categoria?.nombre || 'General'}</span>
+            <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{subasta.categoriaNombre || 'General'}</span>
             <span style={{ 
               background: isActiva ? 'var(--success)' : 'var(--text-muted)', 
               color: 'white', padding: '0.2rem 1rem', borderRadius: '1rem', fontWeight: 'bold' 

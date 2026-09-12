@@ -33,7 +33,8 @@ public class ListarPujasQueryHandler : IQueryHandler<ListarPujasQuery, Paginated
                 p.Id,
                 p.Monto,
                 FechaArgentina.ComoUtc(p.FechaPuja),
-                p.Comprador.Nombre.Substring(0, Math.Min(2, p.Comprador.Nombre.Length)) + "***"
+                p.Comprador.Nombre.Substring(0, Math.Min(2, p.Comprador.Nombre.Length)) + "***",
+                p.CompradorId
             )).ToList(),
             TotalItems = total,
             Page = page,
