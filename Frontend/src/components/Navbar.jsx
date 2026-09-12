@@ -1,6 +1,9 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
+import './Navbar.css';
+
+const claseLink = ({ isActive }) => `navbar__link${isActive ? ' navbar__link--activo' : ''}`;
 
 export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -11,31 +14,41 @@ export default function Navbar() {
     navigate('/login');
   };
 
+  const inicial = user && user.nombre ? user.nombre.trim().charAt(0).toUpperCase() : '';
+
   return (
-    <nav className="navbar">
-      <div style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--accent-primary)' }}>
-        <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>SubastaYa</Link>
-      </div>
-      
-      <div className="nav-links">
+    <header className="navbar">
+      <Link to="/" className="navbar__marca">
+        <svg className="navbar__logo" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 14l6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+          <rect x="11.5" y="4" width="7" height="5" rx="1.2" transform="rotate(45 15 6.5)" fill="currentColor" />
+          <path d="M4 20h10" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        </svg>
+        SubastaYa
+      </Link>
+
+      <nav className="navbar__links" aria-label="Principal">
         {isAuthenticated ? (
           <>
-            <Link to="/" className="nav-link">Catálogo</Link>
-            <Link to="/publicar" className="nav-link" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Publicar</Link>
-            <Link to="/mis-actividades" className="nav-link">Mis Actividades</Link>
-            <Link to="/billetera" className="nav-link">Billetera</Link>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem', paddingLeft: '1rem', borderLeft: '1px solid var(--glass-border)' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Hola, {user.nombre}</span>
-              <button onClick={handleLogout} className="btn" style={{ background: 'transparent', color: 'var(--danger)', padding: '0.25rem 0.5rem' }}>
-                Salir
-              </button>
-            </div>
+            <NavLink to="/" end className={claseLink}>Catálogo</NavLink>
+            <NavLink to="/mis-actividades" className={claseLink}>Mis actividades</NavLink>
+            <NavLink to="/billetera" className={claseLink}>Billetera</NavLink>
+            <NavLink to="/publicar" className="btn btn-primary btn-sm navbar__publicar">+ Publicar</NavLink>
           </>
         ) : (
-          <Link to="/login" className="nav-link">Iniciar Sesión</Link>
+          <NavLink to="/login" className="btn btn-primary btn-sm">Iniciar sesión</NavLink>
         )}
-      </div>
-    </nav>
+      </nav>
+
+      {isAuthenticated && (
+        <div className="navbar__usuario">
+          <span className="navbar__avatar" aria-hidden="true">{inicial}</span>
+          <span className="navbar__nombre">{user.nombre}</span>
+          <button type="button" className="navbar__salir" onClick={handleLogout}>
+            Salir
+          </button>
+        </div>
+      )}
+    </header>
   );
 }

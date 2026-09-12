@@ -1,184 +1,318 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import useRecurso from '../hooks/useRecurso';
+import useToast from '../hooks/useToast';
+import useTitulo from '../hooks/useTitulo';
+import { aDatetimeLocal, describirDuracion, formatoARS } from '../utils/formato';
+import { mensajeDeError, TIPOS_ERROR } from '../utils/errores';
+import './CrearSubasta.css';
+
+const CAMPOS_INICIALES = {
+  categoriaId: '',
+  titulo: '',
+  descripcion: '',
+  urlImagen: '',
+  precioBase: '',
+  incrementoMinimo: '',
+  fechaInicio: '',
+  fechaFin: ''
+};
+
+const GRACIA_MS = 60 * 1000;
+
+function esUrlValida(valor) {
+  try {
+    const url = new URL(valor);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (err) {
+    return Boolean(err) && false;
+  }
+}
+
+function validar(f) {
+  const errores = {};
+  if (f.titulo.trim().length < 3) errores.titulo = 'Poné un título de al menos 3 caracteres.';
+  if (!f.categoriaId) errores.categoriaId = 'Elegí una categoría.';
+  if (!f.urlImagen.trim()) errores.urlImagen = 'Pegá la URL de una imagen.';
+  else if (!esUrlValida(f.urlImagen.trim())) errores.urlImagen = 'La URL tiene que empezar con http:// o https://.';
+  if (!(Number(f.precioBase) > 0)) errores.precioBase = 'El precio base tiene que ser mayor a 0.';
+  if (!(Number(f.incrementoMinimo) > 0)) errores.incrementoMinimo = 'El incremento tiene que ser mayor a 0.';
+  if (!f.fechaInicio) errores.fechaInicio = 'Indicá cuándo empieza.';
+  if (!f.fechaFin) errores.fechaFin = 'Indicá cuándo termina.';
+
+  if (f.fechaInicio && f.fechaFin) {
+    const inicio = new Date(f.fechaInicio);
+    const fin = new Date(f.fechaFin);
+    if (fin <= inicio) errores.fechaFin = 'El cierre tiene que ser posterior al inicio.';
+    else if (fin.getTime() < Date.now() - GRACIA_MS) errores.fechaFin = 'El cierre no puede estar en el pasado.';
+  }
+  return errores;
+}
 
 export default function CrearSubasta() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const [formData, setFormData] = useState({
-    categoriaId: '',
-    titulo: '',
-    descripcion: '',
-    urlImagen: '',
-    precioBase: '',
-    incrementoMinimo: '',
-    fechaInicio: '',
-    fechaFin: ''
-  });
+  const toast = useToast();
+  useTitulo('Publicar subasta');
 
-  useEffect(() => {
-    // Cargar categorías al inicio
-    api.get('/categories')
-      .then(res => setCategories(res.data))
-      .catch(err => setError('Error al cargar categorías.'));
-  }, []);
+  const [formData, setFormData] = useState(CAMPOS_INICIALES);
+  const [errores, setErrores] = useState({});
+  const [errorGeneral, setErrorGeneral] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [previewRota, setPreviewRota] = useState(false);
+
+  const categorias = useRecurso(
+    (signal) => api.get('/categories', { signal }).then((res) => res.data || []),
+    []
+  );
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError('');
-  };
-
-  const validateForm = () => {
-    if (!formData.categoriaId || !formData.titulo || !formData.precioBase || !formData.fechaInicio || !formData.fechaFin || !formData.incrementoMinimo || !formData.urlImagen) {
-      setError('Por favor, completa todos los campos requeridos (incluyendo la imagen).');
-      return false;
-    }
-
-    if (Number(formData.precioBase) <= 0 || Number(formData.incrementoMinimo) <= 0) {
-      setError('Los precios e incrementos deben ser mayores a 0.');
-      return false;
-    }
-
-    const start = new Date(formData.fechaInicio);
-    const end = new Date(formData.fechaFin);
-    const now = new Date();
-
-    if (start >= end) {
-      setError('La fecha de fin debe ser posterior a la fecha de inicio.');
-      return false;
-    }
-
-    // Comparamos contra now - 1 minuto de changüí por si tardó en llenar el form
-    if (end < new Date(now.getTime() - 60000)) {
-      setError('La fecha de fin no puede estar en el pasado.');
-      return false;
-    }
-
-    return true;
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrores((prev) => ({ ...prev, [name]: '' }));
+    setErrorGeneral('');
+    if (name === 'urlImagen') setPreviewRota(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-    
-    setLoading(true);
-    setError('');
-    
+    const erroresCliente = validar(formData);
+    if (Object.keys(erroresCliente).length > 0) {
+      setErrores(erroresCliente);
+      const primero = Object.keys(erroresCliente)[0];
+      const campo = document.getElementById(`campo-${primero}`);
+      if (campo) campo.focus();
+      return;
+    }
+
+    setEnviando(true);
+    setErrorGeneral('');
     try {
-      // El payload requiere números para precios e IDs
       const payload = {
         ...formData,
+        titulo: formData.titulo.trim(),
+        descripcion: formData.descripcion.trim(),
+        urlImagen: formData.urlImagen.trim(),
         categoriaId: Number(formData.categoriaId),
         precioBase: Number(formData.precioBase),
         incrementoMinimo: Number(formData.incrementoMinimo)
       };
-
       const response = await api.post('/auctions', payload);
-      
-      // La API debería devolver la subasta creada con su ID
-      // Como esto es publicación, lo mandamos al catálogo o al detalle
-      navigate(`/subasta/${response.data.id}`);
+      toast.exito('Subasta publicada.');
+      navigate(`/subasta/${response.data.id}`, { replace: true });
     } catch (err) {
-      setError(err.message || 'Error al crear la subasta.');
+      if (err.kind === TIPOS_ERROR.VALIDACION && err.errores) {
+        setErrores(err.errores);
+        const sinCampo = Object.keys(err.errores).every((clave) => !(clave in CAMPOS_INICIALES));
+        if (sinCampo) setErrorGeneral(mensajeDeError(err));
+      } else {
+        setErrorGeneral(mensajeDeError(err));
+      }
     } finally {
-      setLoading(false);
+      setEnviando(false);
     }
   };
 
+  const ahoraLocal = aDatetimeLocal(new Date());
+  const inicio = formData.fechaInicio ? new Date(formData.fechaInicio) : null;
+  const fin = formData.fechaFin ? new Date(formData.fechaFin) : null;
+  const duracionMs = inicio && fin && fin > inicio ? fin - inicio : null;
+  const mostrarPreview = esUrlValida(formData.urlImagen.trim()) && !previewRota;
+  const precioBase = Number(formData.precioBase);
+  const incremento = Number(formData.incrementoMinimo);
+  const primeraOferta = precioBase > 0 && incremento > 0 ? precioBase + incremento : null;
+
+  const claseInput = (campo) => `input-field${errores[campo] ? ' input-field--error' : ''}`;
+  const describir = (campo) => (errores[campo] ? `campo-${campo}-error` : undefined);
+  const renderError = (campo) => (
+    errores[campo] ? <p id={`campo-${campo}-error`} className="form-error">{errores[campo]}</p> : null
+  );
+
   return (
-    <div className="layout-container" style={{ maxWidth: '800px' }}>
-      <h1 style={{ marginBottom: '2rem' }}>Publicar Subasta</h1>
-      
-      <div className="glass-panel">
-        {error && <div className="alert alert-danger">{error}</div>}
-        
-        <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-            
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <label className="form-label">Título de la Subasta *</label>
-              <input 
-                type="text" name="titulo" className="input-field" 
-                value={formData.titulo} onChange={handleChange} 
-                placeholder="Ej: Consola PlayStation 5" required
+    <div className="layout-container publicar">
+      <div className="publicar__encabezado">
+        <h1>Publicar subasta</h1>
+        <p className="publicar__subtitulo">Completá los datos. Una vez publicada no se puede editar, porque las ofertas se hacen sobre estas condiciones.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="publicar__form" noValidate>
+        <section className="glass-panel publicar__seccion">
+          <h2 className="publicar__titulo-seccion">Qué vendés</h2>
+          <div className="form-grid">
+            <div className="form-group form-grid__completo">
+              <label className="form-label" htmlFor="campo-titulo">Título</label>
+              <input
+                id="campo-titulo"
+                type="text"
+                name="titulo"
+                className={claseInput('titulo')}
+                value={formData.titulo}
+                onChange={handleChange}
+                placeholder="Ej: Consola PlayStation 5 con dos joysticks"
+                maxLength={120}
+                aria-invalid={Boolean(errores.titulo)}
+                aria-describedby={describir('titulo')}
               />
+              {renderError('titulo')}
             </div>
 
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <label className="form-label">Descripción</label>
-              <textarea 
-                name="descripcion" className="input-field" 
-                value={formData.descripcion} onChange={handleChange} 
-                placeholder="Detalles del producto..." rows="3"
+            <div className="form-group form-grid__completo">
+              <label className="form-label" htmlFor="campo-descripcion">Descripción <span className="publicar__opcional">opcional</span></label>
+              <textarea
+                id="campo-descripcion"
+                name="descripcion"
+                className="input-field publicar__textarea"
+                value={formData.descripcion}
+                onChange={handleChange}
+                placeholder="Estado, accesorios, detalles que un comprador querría saber."
+                rows="3"
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Categoría *</label>
-              <select name="categoriaId" className="input-field" value={formData.categoriaId} onChange={handleChange} required>
-                <option value="">Seleccione...</option>
-                {categories.map(cat => (
+              <label className="form-label" htmlFor="campo-categoriaId">Categoría</label>
+              <select
+                id="campo-categoriaId"
+                name="categoriaId"
+                className={claseInput('categoriaId')}
+                value={formData.categoriaId}
+                onChange={handleChange}
+                disabled={categorias.cargando}
+                aria-invalid={Boolean(errores.categoriaId)}
+                aria-describedby={describir('categoriaId')}
+              >
+                <option value="">{categorias.cargando ? 'Cargando…' : 'Elegí una categoría'}</option>
+                {(categorias.datos || []).map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.nombre}</option>
                 ))}
               </select>
+              {renderError('categoriaId')}
+              {categorias.error && <p className="form-error">No pudimos cargar las categorías. <button type="button" className="publicar__link" onClick={categorias.recargar}>Reintentar</button></p>}
             </div>
 
             <div className="form-group">
-              <label className="form-label">URL de Imagen *</label>
-              <input 
-                type="url" name="urlImagen" className="input-field" 
-                value={formData.urlImagen} onChange={handleChange} 
-                placeholder="https://..." required
+              <label className="form-label" htmlFor="campo-urlImagen">URL de la imagen</label>
+              <input
+                id="campo-urlImagen"
+                type="url"
+                name="urlImagen"
+                className={claseInput('urlImagen')}
+                value={formData.urlImagen}
+                onChange={handleChange}
+                placeholder="https://…"
+                inputMode="url"
+                aria-invalid={Boolean(errores.urlImagen)}
+                aria-describedby={describir('urlImagen')}
               />
+              {renderError('urlImagen')}
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Precio Base ($) *</label>
-              <input 
-                type="number" name="precioBase" className="input-field" 
-                value={formData.precioBase} onChange={handleChange} min="1" step="0.01" required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Incremento Mínimo ($) *</label>
-              <input 
-                type="number" name="incrementoMinimo" className="input-field" 
-                value={formData.incrementoMinimo} onChange={handleChange} min="0.01" step="0.01" required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Fecha de Inicio *</label>
-              <input 
-                type="datetime-local" name="fechaInicio" className="input-field" 
-                value={formData.fechaInicio} onChange={handleChange} required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Fecha de Fin *</label>
-              <input 
-                type="datetime-local" name="fechaFin" className="input-field" 
-                value={formData.fechaFin} onChange={handleChange} required
-              />
-            </div>
-
+            {formData.urlImagen.trim() && (
+              <div className="form-grid__completo publicar__preview">
+                {mostrarPreview ? (
+                  <img src={formData.urlImagen.trim()} alt="Vista previa de la imagen" onError={() => setPreviewRota(true)} />
+                ) : (
+                  <div className="publicar__preview-vacia">
+                    {previewRota ? 'No pudimos cargar esa imagen. Revisá la URL.' : 'La vista previa aparece cuando la URL sea válida.'}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+        </section>
 
-          <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-            <button type="button" className="btn" onClick={() => navigate(-1)} style={{ color: 'var(--text-muted)' }}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Publicando...' : 'Publicar Subasta'}
-            </button>
+        <section className="glass-panel publicar__seccion">
+          <h2 className="publicar__titulo-seccion">Condiciones</h2>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label" htmlFor="campo-precioBase">Precio base</label>
+              <input
+                id="campo-precioBase"
+                type="number"
+                name="precioBase"
+                className={claseInput('precioBase')}
+                value={formData.precioBase}
+                onChange={handleChange}
+                min="1"
+                step="1"
+                inputMode="numeric"
+                placeholder="0"
+                aria-invalid={Boolean(errores.precioBase)}
+                aria-describedby={describir('precioBase')}
+              />
+              {renderError('precioBase')}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="campo-incrementoMinimo">Incremento mínimo</label>
+              <input
+                id="campo-incrementoMinimo"
+                type="number"
+                name="incrementoMinimo"
+                className={claseInput('incrementoMinimo')}
+                value={formData.incrementoMinimo}
+                onChange={handleChange}
+                min="1"
+                step="1"
+                inputMode="numeric"
+                placeholder="0"
+                aria-invalid={Boolean(errores.incrementoMinimo)}
+                aria-describedby={describir('incrementoMinimo')}
+              />
+              {renderError('incrementoMinimo')}
+              {!errores.incrementoMinimo && primeraOferta && (
+                <p className="form-hint">La primera oferta posible va a ser de {formatoARS(primeraOferta)}.</p>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="campo-fechaInicio">Empieza</label>
+              <input
+                id="campo-fechaInicio"
+                type="datetime-local"
+                name="fechaInicio"
+                className={claseInput('fechaInicio')}
+                value={formData.fechaInicio}
+                onChange={handleChange}
+                min={ahoraLocal}
+                aria-invalid={Boolean(errores.fechaInicio)}
+                aria-describedby={describir('fechaInicio')}
+              />
+              {renderError('fechaInicio')}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="campo-fechaFin">Termina</label>
+              <input
+                id="campo-fechaFin"
+                type="datetime-local"
+                name="fechaFin"
+                className={claseInput('fechaFin')}
+                value={formData.fechaFin}
+                onChange={handleChange}
+                min={formData.fechaInicio || ahoraLocal}
+                aria-invalid={Boolean(errores.fechaFin)}
+                aria-describedby={describir('fechaFin')}
+              />
+              {renderError('fechaFin')}
+              {!errores.fechaFin && duracionMs != null && (
+                <p className="form-hint">La subasta va a durar {describirDuracion(duracionMs)}.</p>
+              )}
+            </div>
           </div>
-        </form>
-      </div>
+        </section>
+
+        {errorGeneral && <div className="alert alert-danger" role="alert">{errorGeneral}</div>}
+
+        <div className="publicar__acciones">
+          <button type="button" className="btn btn-ghost" onClick={() => navigate(-1)} disabled={enviando}>
+            Cancelar
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={enviando} aria-busy={enviando}>
+            {enviando ? 'Publicando…' : 'Publicar subasta'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

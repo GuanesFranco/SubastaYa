@@ -1,6 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import AuthProvider from './context/AuthContext';
+import useAuth from './hooks/useAuth';
+import ToastProvider from './components/ToastProvider';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -9,17 +11,22 @@ import Billetera from './pages/Billetera';
 import SalaSubasta from './pages/SalaSubasta';
 import MisActividades from './pages/MisActividades';
 
-// Componente para proteger rutas que requieren estar logueado
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <Navigate to="/login" />;
+  const location = useLocation();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  }
   return children;
 };
 
-// Componente para evitar que un usuario logueado entre al Login
 const GuestRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  if (isAuthenticated) return <Navigate to="/" />;
+  const location = useLocation();
+  if (isAuthenticated) {
+    const destino = location.state && location.state.from ? location.state.from : '/';
+    return <Navigate to={destino} replace />;
+  }
   return children;
 };
 
@@ -27,36 +34,37 @@ function AppRoutes() {
   return (
     <>
       <Navbar />
-      <Routes>
-        <Route path="/login" element={
-          <GuestRoute>
-            <Login />
-          </GuestRoute>
-        } />
-        <Route path="/" element={<Home />} />
-        <Route path="/publicar" element={
-          <ProtectedRoute>
-            <CrearSubasta />
-          </ProtectedRoute>
-        } />
-        <Route path="/billetera" element={
-          <ProtectedRoute>
-            <Billetera />
-          </ProtectedRoute>
-        } />
-        <Route path="/subasta/:id" element={
-          <ProtectedRoute>
-            <SalaSubasta />
-          </ProtectedRoute>
-        } />
-        <Route path="/mis-actividades" element={
-          <ProtectedRoute>
-            <MisActividades />
-          </ProtectedRoute>
-        } />
-        {/* Agregaremos más rutas a medida que avancemos */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      <main>
+        <Routes>
+          <Route path="/login" element={
+            <GuestRoute>
+              <Login />
+            </GuestRoute>
+          } />
+          <Route path="/" element={<Home />} />
+          <Route path="/publicar" element={
+            <ProtectedRoute>
+              <CrearSubasta />
+            </ProtectedRoute>
+          } />
+          <Route path="/billetera" element={
+            <ProtectedRoute>
+              <Billetera />
+            </ProtectedRoute>
+          } />
+          <Route path="/subasta/:id" element={
+            <ProtectedRoute>
+              <SalaSubasta />
+            </ProtectedRoute>
+          } />
+          <Route path="/mis-actividades" element={
+            <ProtectedRoute>
+              <MisActividades />
+            </ProtectedRoute>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
     </>
   );
 }
@@ -64,9 +72,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <ToastProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }

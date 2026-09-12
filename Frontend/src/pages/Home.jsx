@@ -1,122 +1,201 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import AuctionCard from '../components/AuctionCard';
 import Paginador from '../components/Paginador';
+import Skeleton from '../components/Skeleton';
+import EstadoVacio from '../components/EstadoVacio';
+import EstadoError from '../components/EstadoError';
+import useRecurso from '../hooks/useRecurso';
+import useTitulo from '../hooks/useTitulo';
+import { plural } from '../utils/formato';
+import './Home.css';
 
 const PAGE_SIZE = 12;
+const ESTADO_POR_DEFECTO = 'Activa';
+const TODOS_LOS_ESTADOS = 'todos';
+
+const PARAMS = {
+  categoria: 'categoria',
+  estado: 'estado',
+  orden: 'orden',
+  min: 'min',
+  max: 'max',
+  pagina: 'pagina'
+};
+
+function leerFiltros(searchParams) {
+  const estado = searchParams.get(PARAMS.estado);
+  return {
+    categoriaId: searchParams.get(PARAMS.categoria) || '',
+    estado: estado === null ? ESTADO_POR_DEFECTO : estado,
+    orden: searchParams.get(PARAMS.orden) || '',
+    precioMin: searchParams.get(PARAMS.min) || '',
+    precioMax: searchParams.get(PARAMS.max) || ''
+  };
+}
+
+function leerPagina(searchParams) {
+  const valor = parseInt(searchParams.get(PARAMS.pagina), 10);
+  return Number.isNaN(valor) || valor < 1 ? 1 : valor;
+}
 
 export default function Home() {
-  const [auctions, setAuctions] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  useTitulo('Catálogo');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filtros = leerFiltros(searchParams);
+  const page = leerPagina(searchParams);
 
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalItems, setTotalItems] = useState(0);
+  const [precios, setPrecios] = useState(() => ({ min: filtros.precioMin, max: filtros.precioMax }));
 
-  // Filtros
-  const [categoriaId, setCategoriaId] = useState('');
-  const [estado, setEstado] = useState('Activa');
-  const [precioMin, setPrecioMin] = useState('');
-  const [precioMax, setPrecioMax] = useState('');
-  const [orden, setOrden] = useState('');
-  const [preciosAplicados, setPreciosAplicados] = useState({ min: '', max: '' });
-
-  const fetchCategorias = async () => {
-    try {
-      // Como advirtió Enzo, las categorías vienen planas, NO paginadas
-      const response = await api.get('/categories');
-      setCategories(response.data);
-    } catch (err) {
-      console.error('Error al cargar categorías', err);
-    }
+  const actualizarParams = (cambios, { reiniciarPagina = true } = {}) => {
+    setSearchParams((prev) => {
+      const siguiente = new URLSearchParams(prev);
+      Object.entries(cambios).forEach(([clave, valor]) => {
+        if (valor === '' || valor === null || valor === undefined) siguiente.delete(clave);
+        else siguiente.set(clave, String(valor));
+      });
+      if (reiniciarPagina) siguiente.delete(PARAMS.pagina);
+      return siguiente;
+    });
   };
 
-  const fetchSubastas = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      let url = `/auctions?page=${page}&pageSize=${PAGE_SIZE}`;
-      if (categoriaId) url += `&categoriaId=${categoriaId}`;
-      if (estado) url += `&estado=${estado}`;
-      if (preciosAplicados.min) url += `&precioMin=${preciosAplicados.min}`;
-      if (preciosAplicados.max) url += `&precioMax=${preciosAplicados.max}`;
-      if (orden) url += `&orderBy=${orden}`;
-
-      // Subastas SI vienen paginadas
-      const response = await api.get(url);
-      const paginas = response.data.totalPages || 0;
-
-      if (paginas > 0 && page > paginas) {
-        setPage(paginas);
-        return;
-      }
-
-      setAuctions(response.data.items || []);
-      setTotalPages(paginas);
-      setTotalItems(response.data.totalItems || 0);
-    } catch (err) {
-      setError(err.message || 'Error al cargar el catálogo');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategorias();
-  }, []);
-
-  useEffect(() => {
-    fetchSubastas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, categoriaId, estado, orden, preciosAplicados]);
-
-  const cambiarCategoria = (valor) => {
-    setCategoriaId(valor);
-    setPage(1);
+  const cambiarPagina = (destino) => {
+    actualizarParams({ [PARAMS.pagina]: destino === 1 ? '' : destino }, { reiniciarPagina: false });
   };
 
   const cambiarEstado = (valor) => {
-    setEstado(valor);
-    setPage(1);
+    actualizarParams({ [PARAMS.estado]: valor === ESTADO_POR_DEFECTO ? '' : valor });
   };
 
-  const cambiarOrden = (valor) => {
-    setOrden(valor);
-    setPage(1);
-  };
-
-  const aplicarFiltrosPrecios = (e) => {
+  const aplicarPrecios = (e) => {
     e.preventDefault();
-    setPreciosAplicados({ min: precioMin, max: precioMax });
-    setPage(1);
+    actualizarParams({ [PARAMS.min]: precios.min, [PARAMS.max]: precios.max });
+  };
+
+  const limpiarFiltros = () => {
+    setPrecios({ min: '', max: '' });
+    setSearchParams({});
+  };
+
+  const categorias = useRecurso(
+    (signal) => api.get('/categories', { signal }).then((res) => res.data || []),
+    []
+  );
+
+  const subastas = useRecurso(async (signal) => {
+    const params = { page, pageSize: PAGE_SIZE };
+    if (filtros.categoriaId) params.categoriaId = filtros.categoriaId;
+    if (filtros.estado && filtros.estado !== TODOS_LOS_ESTADOS) params.estado = filtros.estado;
+    if (filtros.precioMin) params.precioMin = filtros.precioMin;
+    if (filtros.precioMax) params.precioMax = filtros.precioMax;
+    if (filtros.orden) params.orderBy = filtros.orden;
+
+    const res = await api.get('/auctions', { params, signal });
+    const paginas = res.data.totalPages || 0;
+    if (paginas > 0 && page > paginas) cambiarPagina(paginas);
+    return res.data;
+  }, [page, filtros]);
+
+  const hayFiltrosActivos = Boolean(
+    filtros.categoriaId
+    || filtros.estado !== ESTADO_POR_DEFECTO
+    || filtros.orden
+    || filtros.precioMin
+    || filtros.precioMax
+  );
+
+  const items = subastas.datos ? subastas.datos.items || [] : [];
+  const totalPages = subastas.datos ? subastas.datos.totalPages || 0 : 0;
+  const totalItems = subastas.datos ? subastas.datos.totalItems || 0 : 0;
+
+  const renderResultados = () => {
+    if (subastas.cargando) {
+      return <Skeleton variante="cards" cantidad={6} etiqueta="Cargando catálogo" />;
+    }
+
+    if (subastas.error && !subastas.datos) {
+      return <EstadoError error={subastas.error} onReintentar={subastas.recargar} />;
+    }
+
+    if (items.length === 0) {
+      return (
+        <EstadoVacio
+          icono="busqueda"
+          titulo={hayFiltrosActivos ? 'No hay subastas con estos filtros' : 'Todavía no hay subastas publicadas'}
+          descripcion={hayFiltrosActivos
+            ? 'Probá con otra categoría, otro estado o un rango de precio más amplio.'
+            : 'Cuando alguien publique una subasta va a aparecer acá.'}
+          accion={hayFiltrosActivos
+            ? <button type="button" className="btn btn-primary" onClick={limpiarFiltros}>Limpiar filtros</button>
+            : <Link to="/publicar" className="btn btn-primary">Publicar la primera</Link>}
+        />
+      );
+    }
+
+    return (
+      <>
+        {subastas.error && (
+          <EstadoError compacto error={subastas.error} onReintentar={subastas.recargar} titulo="No pudimos actualizar el catálogo" />
+        )}
+        <div className="grid-cards" aria-busy={subastas.recargando}>
+          {items.map((auction) => (
+            <AuctionCard key={auction.id} auction={auction} />
+          ))}
+        </div>
+        <Paginador
+          page={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          onChange={cambiarPagina}
+          disabled={subastas.ocupado}
+        />
+      </>
+    );
   };
 
   return (
-    <div className="layout-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <h1 style={{ margin: 0 }}>Catálogo de Subastas</h1>
+    <div className="layout-container catalogo">
+      <div className="catalogo__encabezado">
+        <h1>Catálogo de Subastas</h1>
+        {subastas.datos && items.length > 0 && (
+          <span className="catalogo__total">{plural(totalItems, 'subasta', 'subastas')}</span>
+        )}
       </div>
 
-      <div className="glass-panel" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '2rem', padding: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', flexGrow: 1 }}>
-          <select className="input-field" style={{ width: 'auto', minWidth: '180px' }} value={categoriaId} onChange={(e) => cambiarCategoria(e.target.value)}>
-            <option value="">Todas las Categorías</option>
-            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
+      <div className="glass-panel filtros">
+        <div className="filtros__grupo">
+          <select
+            className="input-field"
+            value={filtros.categoriaId}
+            onChange={(e) => actualizarParams({ [PARAMS.categoria]: e.target.value })}
+            disabled={categorias.cargando}
+            aria-label="Categoría"
+          >
+            <option value="">Todas las categorías</option>
+            {(categorias.datos || []).map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
           </select>
 
-          <select className="input-field" style={{ width: 'auto', minWidth: '180px' }} value={estado} onChange={(e) => cambiarEstado(e.target.value)}>
-            <option value="">Todos los Estados</option>
+          <select
+            className="input-field"
+            value={filtros.estado}
+            onChange={(e) => cambiarEstado(e.target.value)}
+            aria-label="Estado"
+          >
+            <option value={TODOS_LOS_ESTADOS}>Todos los estados</option>
             <option value="Activa">Activas</option>
             <option value="Programada">Programadas</option>
             <option value="Finalizada">Finalizadas</option>
             <option value="Desierta">Desiertas</option>
           </select>
 
-          <select className="input-field" style={{ width: 'auto', minWidth: '200px' }} value={orden} onChange={(e) => cambiarOrden(e.target.value)}>
-            <option value="">Orden (Por Defecto)</option>
+          <select
+            className="input-field"
+            value={filtros.orden}
+            onChange={(e) => actualizarParams({ [PARAMS.orden]: e.target.value })}
+            aria-label="Orden"
+          >
+            <option value="">Orden por defecto</option>
             <option value="fecha_asc">Próximas a cerrar</option>
             <option value="fecha_desc">Cierre lejano</option>
             <option value="precio_asc">Menor precio</option>
@@ -124,44 +203,37 @@ export default function Home() {
           </select>
         </div>
 
-        <form onSubmit={aplicarFiltrosPrecios} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginRight: '0.5rem' }}>Precio:</span>
-          <input type="number" placeholder="Min $" className="input-field" style={{ width: '100px' }} value={precioMin} onChange={(e) => setPrecioMin(e.target.value)} />
-          <span style={{ color: 'var(--text-muted)' }}>-</span>
-          <input type="number" placeholder="Max $" className="input-field" style={{ width: '100px' }} value={precioMax} onChange={(e) => setPrecioMax(e.target.value)} />
-          <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1rem', marginLeft: '0.5rem' }}>Filtrar</button>
+        <form onSubmit={aplicarPrecios} className="filtros__precio">
+          <span className="filtros__etiqueta">Precio</span>
+          <input
+            type="number"
+            placeholder="Mín $"
+            className="input-field"
+            value={precios.min}
+            onChange={(e) => setPrecios((prev) => ({ ...prev, min: e.target.value }))}
+            min="0"
+            aria-label="Precio mínimo"
+          />
+          <span className="filtros__separador" aria-hidden="true">–</span>
+          <input
+            type="number"
+            placeholder="Máx $"
+            className="input-field"
+            value={precios.max}
+            onChange={(e) => setPrecios((prev) => ({ ...prev, max: e.target.value }))}
+            min="0"
+            aria-label="Precio máximo"
+          />
+          <button type="submit" className="btn btn-primary btn-sm">Filtrar</button>
+          {hayFiltrosActivos && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={limpiarFiltros}>
+              Limpiar
+            </button>
+          )}
         </form>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Cargando catálogo...</div>
-      ) : auctions.length === 0 ? (
-        <div className="glass-panel" style={{ textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-muted)' }}>No se encontraron subastas con estos filtros.</p>
-        </div>
-      ) : (
-        <>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: '2rem'
-          }}>
-            {auctions.map(auction => (
-              <AuctionCard key={auction.id} auction={auction} />
-            ))}
-          </div>
-
-          <Paginador
-            page={page}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            onChange={setPage}
-            disabled={loading}
-          />
-        </>
-      )}
+      {renderResultados()}
     </div>
   );
 }

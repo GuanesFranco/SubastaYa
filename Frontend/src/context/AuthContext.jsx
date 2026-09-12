@@ -1,61 +1,59 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import api from '../services/api';
+import AuthContext from './authContext';
 
-const AuthContext = createContext();
+const CLAVE_TOKEN = 'token';
+const CLAVE_USUARIO = 'user';
 
-export const useAuth = () => useContext(AuthContext);
+function limpiarSesion() {
+  localStorage.removeItem(CLAVE_TOKEN);
+  localStorage.removeItem(CLAVE_USUARIO);
+}
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+function leerSesionGuardada() {
+  try {
+    const token = localStorage.getItem(CLAVE_TOKEN);
+    const guardado = localStorage.getItem(CLAVE_USUARIO);
+    if (!token || !guardado) return null;
+    return JSON.parse(guardado);
+  } catch (err) {
+    console.error('Sesión guardada inválida', err);
+    limpiarSesion();
+    return null;
+  }
+}
 
-  useEffect(() => {
-    // Si hay token y usuario guardado, inicializar estado
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (token && storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Error parsing stored user', e);
-        logout();
-      }
-    }
-    setLoading(false);
-  }, []);
+export default function AuthProvider({ children }) {
+  const [user, setUser] = useState(leerSesionGuardada);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const response = await api.post('/sessions', { email, password });
     const { token, id: usuarioId, email: userEmail, nombre } = response.data;
-    
-    const userData = { usuarioId, email: userEmail, nombre };
-    
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
-    return userData;
-  };
+    const datos = { usuarioId, email: userEmail, nombre };
 
-  const register = async (email, password, nombre) => {
+    localStorage.setItem(CLAVE_TOKEN, token);
+    localStorage.setItem(CLAVE_USUARIO, JSON.stringify(datos));
+    setUser(datos);
+    return datos;
+  }, []);
+
+  const register = useCallback(async (email, password, nombre) => {
     await api.post('/users', { email, password, nombre });
-    // Tras registrarse, automáticamente loguear
     return login(email, password);
-  };
+  }, [login]);
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = useCallback(() => {
+    limpiarSesion();
     setUser(null);
-  };
+  }, []);
 
-  if (loading) {
-    return <div>Cargando sesión...</div>;
-  }
+  const valor = useMemo(() => ({
+    user,
+    login,
+    register,
+    logout,
+    isAuthenticated: Boolean(user)
+  }), [user, login, register, logout]);
 
-  return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
+}
