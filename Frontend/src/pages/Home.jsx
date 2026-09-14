@@ -14,6 +14,7 @@ import './Home.css';
 const PAGE_SIZE = 12;
 const ESTADO_POR_DEFECTO = 'Activa';
 const TODOS_LOS_ESTADOS = 'todos';
+const ORDEN_POR_DEFECTO = 'fecha_asc';
 
 const PARAMS = {
   categoria: 'categoria',
@@ -29,7 +30,7 @@ function leerFiltros(searchParams) {
   return {
     categoriaId: searchParams.get(PARAMS.categoria) || '',
     estado: estado === null ? ESTADO_POR_DEFECTO : estado,
-    orden: searchParams.get(PARAMS.orden) || '',
+    orden: searchParams.get(PARAMS.orden) || ORDEN_POR_DEFECTO,
     precioMin: searchParams.get(PARAMS.min) || '',
     precioMax: searchParams.get(PARAMS.max) || ''
   };
@@ -46,7 +47,14 @@ export default function Home() {
   const filtros = leerFiltros(searchParams);
   const page = leerPagina(searchParams);
 
-  const [precios, setPrecios] = useState(() => ({ min: filtros.precioMin, max: filtros.precioMax }));
+  const claveUrl = `${filtros.precioMin}|${filtros.precioMax}`;
+  const [precios, setPrecios] = useState(() => ({ min: filtros.precioMin, max: filtros.precioMax, origen: claveUrl }));
+  const [errorPrecio, setErrorPrecio] = useState('');
+
+  if (precios.origen !== claveUrl) {
+    setPrecios({ min: filtros.precioMin, max: filtros.precioMax, origen: claveUrl });
+    setErrorPrecio('');
+  }
 
   const actualizarParams = (cambios, { reiniciarPagina = true } = {}) => {
     setSearchParams((prev) => {
@@ -70,11 +78,24 @@ export default function Home() {
 
   const aplicarPrecios = (e) => {
     e.preventDefault();
+    const min = precios.min === '' ? null : Number(precios.min);
+    const max = precios.max === '' ? null : Number(precios.max);
+    if (min !== null && max !== null && min > max) {
+      setErrorPrecio('El precio mínimo no puede ser mayor que el máximo.');
+      return;
+    }
+    setErrorPrecio('');
     actualizarParams({ [PARAMS.min]: precios.min, [PARAMS.max]: precios.max });
   };
 
+  const cambiarPrecio = (campo, valor) => {
+    setPrecios((prev) => ({ ...prev, [campo]: valor }));
+    setErrorPrecio('');
+  };
+
   const limpiarFiltros = () => {
-    setPrecios({ min: '', max: '' });
+    setPrecios({ min: '', max: '', origen: '|' });
+    setErrorPrecio('');
     setSearchParams({});
   };
 
@@ -100,7 +121,7 @@ export default function Home() {
   const hayFiltrosActivos = Boolean(
     filtros.categoriaId
     || filtros.estado !== ESTADO_POR_DEFECTO
-    || filtros.orden
+    || filtros.orden !== ORDEN_POR_DEFECTO
     || filtros.precioMin
     || filtros.precioMax
   );
@@ -147,6 +168,8 @@ export default function Home() {
           page={page}
           totalPages={totalPages}
           totalItems={totalItems}
+          singular="subasta"
+          pluralPalabra="subastas"
           onChange={cambiarPagina}
           disabled={subastas.ocupado}
         />
@@ -158,9 +181,9 @@ export default function Home() {
     <div className="layout-container catalogo">
       <div className="catalogo__encabezado">
         <h1>Catálogo de Subastas</h1>
-        {subastas.datos && items.length > 0 && (
-          <span className="catalogo__total">{plural(totalItems, 'subasta', 'subastas')}</span>
-        )}
+        <span className="catalogo__total">
+          {subastas.datos ? plural(totalItems, 'subasta', 'subastas', '') : ''}
+        </span>
       </div>
 
       <div className="glass-panel filtros">
@@ -186,18 +209,17 @@ export default function Home() {
             <option value="Activa">Activas</option>
             <option value="Programada">Programadas</option>
             <option value="Finalizada">Finalizadas</option>
-            <option value="Desierta">Desiertas</option>
+            <option value="Desierta">Sin ofertas</option>
           </select>
 
           <select
             className="input-field"
             value={filtros.orden}
-            onChange={(e) => actualizarParams({ [PARAMS.orden]: e.target.value })}
+            onChange={(e) => actualizarParams({ [PARAMS.orden]: e.target.value === ORDEN_POR_DEFECTO ? '' : e.target.value })}
             aria-label="Orden"
           >
-            <option value="">Orden por defecto</option>
-            <option value="fecha_asc">Próximas a cerrar</option>
-            <option value="fecha_desc">Cierre lejano</option>
+            <option value="fecha_asc">Cierre más próximo</option>
+            <option value="fecha_desc">Cierre más lejano</option>
             <option value="precio_asc">Menor precio</option>
             <option value="precio_desc">Mayor precio</option>
           </select>
@@ -208,27 +230,34 @@ export default function Home() {
           <input
             type="number"
             placeholder="Mín $"
-            className="input-field"
+            className={`input-field${errorPrecio ? ' input-field--error' : ''}`}
             value={precios.min}
-            onChange={(e) => setPrecios((prev) => ({ ...prev, min: e.target.value }))}
+            onChange={(e) => cambiarPrecio('min', e.target.value)}
             min="0"
             aria-label="Precio mínimo"
+            aria-invalid={Boolean(errorPrecio)}
+            aria-describedby={errorPrecio ? 'filtros-precio-error' : undefined}
           />
           <span className="filtros__separador" aria-hidden="true">–</span>
           <input
             type="number"
             placeholder="Máx $"
-            className="input-field"
+            className={`input-field${errorPrecio ? ' input-field--error' : ''}`}
             value={precios.max}
-            onChange={(e) => setPrecios((prev) => ({ ...prev, max: e.target.value }))}
+            onChange={(e) => cambiarPrecio('max', e.target.value)}
             min="0"
             aria-label="Precio máximo"
+            aria-invalid={Boolean(errorPrecio)}
+            aria-describedby={errorPrecio ? 'filtros-precio-error' : undefined}
           />
           <button type="submit" className="btn btn-primary btn-sm">Filtrar</button>
           {hayFiltrosActivos && (
             <button type="button" className="btn btn-ghost btn-sm" onClick={limpiarFiltros}>
               Limpiar
             </button>
+          )}
+          {errorPrecio && (
+            <p id="filtros-precio-error" className="form-error filtros__error" role="alert">{errorPrecio}</p>
           )}
         </form>
       </div>

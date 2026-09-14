@@ -28,23 +28,44 @@
   flex-direction: column;
 }
 
-.skeleton-card__cuerpo {
-  padding: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+.skeleton-card__media {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  background: var(--bg-dark);
 }
 
-.skeleton-card__fila,
+.skeleton-card__estado {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+}
+
+.skeleton-card__cuerpo {
+  padding: var(--space-4) var(--space-5) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.skeleton-card__precio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
 .skeleton-card__pie {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: var(--space-2);
 }
 
-.skeleton-card__pie {
-  margin-top: var(--space-3);
-  align-items: flex-end;
+.skeleton-card__cta {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 var(--space-5) var(--space-4);
 }
 
 .skeleton-filas {
