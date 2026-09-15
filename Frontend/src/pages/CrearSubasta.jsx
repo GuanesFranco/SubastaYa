@@ -31,9 +31,17 @@ function esUrlValida(valor) {
   }
 }
 
+const DESCRIPCION_MIN = 10;
+const DESCRIPCION_MAX = 1000;
+
+const REQUERIDO = <span className="publicar__requerido" aria-hidden="true">*</span>;
+
 function validar(f) {
   const errores = {};
   if (f.titulo.trim().length < 3) errores.titulo = 'Poné un título de al menos 3 caracteres.';
+  const descripcion = f.descripcion.trim();
+  if (descripcion.length < DESCRIPCION_MIN) errores.descripcion = `Contá algo del producto: al menos ${DESCRIPCION_MIN} caracteres.`;
+  else if (descripcion.length > DESCRIPCION_MAX) errores.descripcion = `La descripción no puede pasar los ${DESCRIPCION_MAX} caracteres.`;
   if (!f.categoriaId) errores.categoriaId = 'Elegí una categoría.';
   if (!f.urlImagen.trim()) errores.urlImagen = 'Elegí una imagen de la galería o pegá una URL.';
   else if (!esUrlValida(f.urlImagen.trim())) errores.urlImagen = 'La URL tiene que empezar con http:// o https://.';
@@ -140,7 +148,7 @@ export default function CrearSubasta() {
     <div className="layout-container publicar">
       <div className="publicar__encabezado">
         <h1>Publicar subasta</h1>
-        <p className="publicar__subtitulo">Completá los datos. Una vez publicada no se puede editar, porque las ofertas se hacen sobre estas condiciones.</p>
+        <p className="publicar__subtitulo">Completá los datos. Una vez publicada no se puede editar, porque las ofertas se hacen sobre estas condiciones. Los campos con {REQUERIDO} son obligatorios.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="publicar__form" noValidate>
@@ -148,7 +156,7 @@ export default function CrearSubasta() {
           <h2 className="publicar__titulo-seccion">Qué vendés</h2>
           <div className="form-grid">
             <div className="form-group form-grid__completo">
-              <label className="form-label" htmlFor="campo-titulo">Título</label>
+              <label className="form-label" htmlFor="campo-titulo">Título {REQUERIDO}</label>
               <input
                 id="campo-titulo"
                 type="text"
@@ -158,6 +166,7 @@ export default function CrearSubasta() {
                 onChange={handleChange}
                 placeholder="Ej: Consola PlayStation 5 con dos joysticks"
                 maxLength={120}
+                required
                 aria-invalid={Boolean(errores.titulo)}
                 aria-describedby={describir('titulo')}
               />
@@ -165,20 +174,28 @@ export default function CrearSubasta() {
             </div>
 
             <div className="form-group form-grid__completo">
-              <label className="form-label" htmlFor="campo-descripcion">Descripción <span className="publicar__opcional">opcional</span></label>
+              <label className="form-label" htmlFor="campo-descripcion">Descripción {REQUERIDO}</label>
               <textarea
                 id="campo-descripcion"
                 name="descripcion"
-                className="input-field publicar__textarea"
+                className={`${claseInput('descripcion')} publicar__textarea`}
                 value={formData.descripcion}
                 onChange={handleChange}
                 placeholder="Estado, accesorios, detalles que un comprador querría saber."
                 rows="3"
+                maxLength={DESCRIPCION_MAX}
+                required
+                aria-invalid={Boolean(errores.descripcion)}
+                aria-describedby={describir('descripcion')}
               />
+              {renderError('descripcion')}
+              {!errores.descripcion && formData.descripcion.length >= DESCRIPCION_MAX - 100 && (
+                <p className="form-hint">{formData.descripcion.length}/{DESCRIPCION_MAX} caracteres.</p>
+              )}
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="campo-categoriaId">Categoría</label>
+              <label className="form-label" htmlFor="campo-categoriaId">Categoría {REQUERIDO}</label>
               <select
                 id="campo-categoriaId"
                 name="categoriaId"
@@ -186,6 +203,7 @@ export default function CrearSubasta() {
                 value={formData.categoriaId}
                 onChange={handleChange}
                 disabled={categorias.cargando}
+                required
                 aria-invalid={Boolean(errores.categoriaId)}
                 aria-describedby={describir('categoriaId')}
               >
@@ -199,7 +217,7 @@ export default function CrearSubasta() {
             </div>
 
             <div className="form-group form-grid__completo">
-              <span className="form-label" id="etiqueta-galeria">Imagen</span>
+              <span className="form-label" id="etiqueta-galeria">Imagen {REQUERIDO}</span>
               <p className="form-hint publicar__ayuda-galeria" id="ayuda-galeria">
                 Elegí una de la galería{formData.categoriaId ? ', filtrada por la categoría que marcaste' : ''}. Son fotos de producto sobre fondo neutro, para que el catálogo quede parejo.
               </p>
@@ -248,7 +266,7 @@ export default function CrearSubasta() {
           <h2 className="publicar__titulo-seccion">Condiciones</h2>
           <div className="form-grid">
             <div className="form-group">
-              <label className="form-label" htmlFor="campo-precioBase">Precio base</label>
+              <label className="form-label" htmlFor="campo-precioBase">Precio base {REQUERIDO}</label>
               <input
                 id="campo-precioBase"
                 type="number"
@@ -258,6 +276,7 @@ export default function CrearSubasta() {
                 onChange={handleChange}
                 min="1"
                 step="1"
+                required
                 inputMode="numeric"
                 placeholder="0"
                 aria-invalid={Boolean(errores.precioBase)}
@@ -267,7 +286,7 @@ export default function CrearSubasta() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="campo-incrementoMinimo">Incremento mínimo</label>
+              <label className="form-label" htmlFor="campo-incrementoMinimo">Incremento mínimo {REQUERIDO}</label>
               <input
                 id="campo-incrementoMinimo"
                 type="number"
@@ -277,6 +296,7 @@ export default function CrearSubasta() {
                 onChange={handleChange}
                 min="1"
                 step="1"
+                required
                 inputMode="numeric"
                 placeholder="0"
                 aria-invalid={Boolean(errores.incrementoMinimo)}
@@ -289,7 +309,7 @@ export default function CrearSubasta() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="campo-fechaInicio">Empieza</label>
+              <label className="form-label" htmlFor="campo-fechaInicio">Empieza {REQUERIDO}</label>
               <input
                 id="campo-fechaInicio"
                 type="datetime-local"
@@ -298,6 +318,7 @@ export default function CrearSubasta() {
                 value={formData.fechaInicio}
                 onChange={handleChange}
                 min={ahoraLocal}
+                required
                 aria-invalid={Boolean(errores.fechaInicio)}
                 aria-describedby={describir('fechaInicio')}
               />
@@ -305,7 +326,7 @@ export default function CrearSubasta() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="campo-fechaFin">Termina</label>
+              <label className="form-label" htmlFor="campo-fechaFin">Termina {REQUERIDO}</label>
               <input
                 id="campo-fechaFin"
                 type="datetime-local"
@@ -314,6 +335,7 @@ export default function CrearSubasta() {
                 value={formData.fechaFin}
                 onChange={handleChange}
                 min={formData.fechaInicio || ahoraLocal}
+                required
                 aria-invalid={Boolean(errores.fechaFin)}
                 aria-describedby={describir('fechaFin')}
               />
