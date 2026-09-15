@@ -65,8 +65,10 @@ export default function AuctionCard({ auction }) {
       </div>
 
       <div className="auction-card__cuerpo">
-        <span className="auction-card__categoria">{auction.categoriaNombre || 'General'}</span>
-        <h3 className="auction-card__titulo" id={idTitulo}>{auction.titulo}</h3>
+        <div className="auction-card__encabezado">
+          <h3 className="auction-card__titulo" id={idTitulo}>{auction.titulo}</h3>
+          <span className="auction-card__categoria">{auction.categoriaNombre || 'General'}</span>
+        </div>
 
         <div className="auction-card__precio">
           <span className="auction-card__precio-etiqueta">{ETIQUETA_PRECIO[estado] || 'Precio'}</span>

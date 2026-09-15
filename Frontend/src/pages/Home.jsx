@@ -178,7 +178,7 @@ export default function Home() {
     setVivo((prev) => {
       const anterior = prev.parches[id] || {};
       const nuevo = typeof cambios === 'function' ? cambios(anterior) : { ...anterior, ...cambios };
-      return { ...prev, parches: { ...prev.parches, [id]: { ...nuevo, actualizadoEn: Date.now() } } };
+      return { ...prev, parches: { ...prev.parches, [id]: nuevo } };
     });
   };
 
@@ -188,7 +188,8 @@ export default function Home() {
       precioActual: evento.monto,
       fechaFin: evento.fechaFin,
       fechaUltimaPuja: evento.fechaPuja,
-      ofertasExtra: (p.ofertasExtra || 0) + 1
+      ofertasExtra: (p.ofertasExtra || 0) + 1,
+      actualizadoEn: Date.now()
     })),
     onAuctionExtended: (evento) => parchar(evento.subastaId, { fechaFin: evento.nuevaFechaFin }),
     onAuctionClosed: (evento) => parchar(evento.subastaId, { estado: evento.estado, montoFinal: evento.montoFinal })

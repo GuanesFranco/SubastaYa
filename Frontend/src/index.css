@@ -106,6 +106,7 @@ html {
 body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--bg-page);
+  caret-color: var(--accent-text);
   color: var(--text-main);
   min-height: 100vh;
   line-height: var(--leading-normal);
@@ -258,7 +259,7 @@ a {
 .input-field:focus {
   outline: none;
   border-color: var(--accent-text);
-  box-shadow: 0 0 0 3px var(--accent-bg);
+  box-shadow: var(--focus-ring);
 }
 
 select.input-field {
