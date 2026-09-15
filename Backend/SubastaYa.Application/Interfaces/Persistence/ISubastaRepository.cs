@@ -11,7 +11,8 @@ public interface ISubastaRepository
     Task<bool> ExisteCategoriaAsync(int categoriaId, CancellationToken cancellationToken = default);
 
     Task<(IEnumerable<SubastaResumenDto> Items, int Total)> ObtenerFiltradasAsync(
-        int? categoriaId, EstadoSubasta? estado, decimal? precioMin, decimal? precioMax,
+        int? categoriaId, EstadoSubasta? estado, bool cerradas, string? busqueda,
+        decimal? precioMin, decimal? precioMax,
         string? orderBy, int page, int pageSize, CancellationToken cancellationToken = default);
 
     Task<Subasta?> ObtenerDetalleAsync(int id, CancellationToken cancellationToken = default);

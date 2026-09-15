@@ -9,5 +9,7 @@ public record ListarSubastasFiltroDto(
     decimal? PrecioMax = null,
     string? OrderBy = null,
     int Page = 1,
-    int PageSize = 10
+    int PageSize = 10,
+    string? Busqueda = null,
+    bool Cerradas = false
 );

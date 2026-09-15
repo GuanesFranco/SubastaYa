@@ -28,7 +28,7 @@ public class ListarSubastasQueryHandler : IQueryHandler<ListarSubastasQuery, Pag
         var (page, pageSize) = Paginacion.Normalizar(f.Page, f.PageSize);
 
         var (items, total) = await _subastaRepository.ObtenerFiltradasAsync(
-            f.CategoriaId, f.Estado, f.PrecioMin, f.PrecioMax, f.OrderBy, page, pageSize, cancellationToken);
+            f.CategoriaId, f.Estado, f.Cerradas, f.Busqueda, f.PrecioMin, f.PrecioMax, f.OrderBy, page, pageSize, cancellationToken);
 
         return new PaginatedResult<SubastaResumenDto>
         {

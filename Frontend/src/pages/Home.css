@@ -4,7 +4,7 @@
   align-items: baseline;
   flex-wrap: wrap;
   gap: var(--space-4);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
 .catalogo__encabezado h1 {
@@ -19,42 +19,140 @@
   font-variant-numeric: tabular-nums;
 }
 
-.filtros__error {
-  flex: 1 1 100%;
-  margin-top: 0;
-}
-
 .filtros {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  align-items: center;
-  margin-bottom: var(--space-6);
-  padding: var(--space-5);
-}
-
-.filtros__grupo {
-  display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-3);
-  flex: 1 1 auto;
+  margin-bottom: var(--space-6);
 }
 
-.filtros__grupo .input-field {
+.filtros__principal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.buscador {
+  position: relative;
+  display: block;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.buscador__icono {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.buscador__icono svg {
+  width: 100%;
+  height: 100%;
+}
+
+.buscador__campo {
+  padding-left: calc(var(--space-4) + 1.1rem + var(--space-2));
+}
+
+.buscador__campo::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.chips {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+  margin: -2px;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--glass-border-strong);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.chip:hover {
+  color: var(--text-main);
+  background: var(--surface-raised);
+}
+
+.chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.chip--activo,
+.chip--activo:hover {
+  background: var(--text-main);
+  border-color: var(--text-main);
+  color: var(--bg-page);
+}
+
+.filtros__toggle {
+  display: none;
+}
+
+.filtros__conteo {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--accent-primary);
+  color: white;
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.filtros__toggle svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.filtros__avanzados {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.filtros__avanzados > .input-field {
   width: auto;
-  flex: 1 1 160px;
-  min-width: 160px;
+  flex: 0 1 220px;
+  min-width: 180px;
 }
 
 .filtros__precio {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
 }
 
 .filtros__precio .input-field {
-  width: 110px;
+  width: 120px;
 }
 
 .filtros__etiqueta {
@@ -67,14 +165,61 @@
   color: var(--text-subtle);
 }
 
+.filtros__limpiar {
+  margin-left: auto;
+}
+
+.filtros__error {
+  flex: 1 1 100%;
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .filtros__limpiar {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 640px) {
   .filtros {
-    padding: var(--space-4);
     gap: var(--space-3);
   }
 
-  .filtros__grupo .input-field {
+  .filtros__principal {
+    flex-wrap: wrap;
+  }
+
+  .buscador {
     flex: 1 1 100%;
+  }
+
+  .chips {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .filtros__toggle {
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+
+  .filtros__avanzados {
+    display: none;
+    padding: var(--space-4);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+  }
+
+  .filtros__avanzados[data-abierto="true"] {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filtros__avanzados > .input-field {
+    flex: 1 1 auto;
+    width: 100%;
     min-width: 0;
   }
 
@@ -91,5 +236,9 @@
   .filtros__etiqueta {
     width: 100%;
     margin: 0;
+  }
+
+  .filtros__limpiar {
+    width: 100%;
   }
 }

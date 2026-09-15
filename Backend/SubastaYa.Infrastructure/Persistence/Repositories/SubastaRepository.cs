@@ -26,13 +26,20 @@ public class SubastaRepository : ISubastaRepository
     }
 
     public async Task<(IEnumerable<SubastaResumenDto> Items, int Total)> ObtenerFiltradasAsync(
-        int? categoriaId, EstadoSubasta? estado, decimal? precioMin, decimal? precioMax,
+        int? categoriaId, EstadoSubasta? estado, bool cerradas, string? busqueda,
+        decimal? precioMin, decimal? precioMax,
         string? orderBy, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = _context.Subastas.AsNoTracking().AsQueryable();
 
         if (categoriaId.HasValue) query = query.Where(s => s.CategoriaId == categoriaId.Value);
-        if (estado.HasValue) query = query.Where(s => s.Estado == estado.Value);
+        if (cerradas) query = query.Where(s => s.Estado == EstadoSubasta.Finalizada || s.Estado == EstadoSubasta.Desierta);
+        else if (estado.HasValue) query = query.Where(s => s.Estado == estado.Value);
+        if (!string.IsNullOrWhiteSpace(busqueda))
+        {
+            var termino = busqueda.Trim();
+            query = query.Where(s => s.Titulo.Contains(termino));
+        }
         if (precioMin.HasValue) query = query.Where(s => s.PrecioActual >= precioMin.Value);
         if (precioMax.HasValue) query = query.Where(s => s.PrecioActual <= precioMax.Value);
 
