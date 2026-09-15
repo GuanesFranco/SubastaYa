@@ -5,13 +5,6 @@ import useTitulo from '../hooks/useTitulo';
 import { errorDeCampo, mensajeDeError, TIPOS_ERROR } from '../utils/errores';
 import './Login.css';
 
-const USUARIOS_PRUEBA = [
-  { email: 'vendedor@test.com', rol: 'Vendedor' },
-  { email: 'comprador1@test.com', rol: 'Comprador que lidera' },
-  { email: 'comprador2@test.com', rol: 'Comprador superado' },
-  { email: 'sinfondos@test.com', rol: 'Sin saldo suficiente' }
-];
-const PASSWORD_PRUEBA = 'Test1234!';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validar(formData, registrando) {
@@ -53,13 +46,6 @@ export default function Login() {
 
   const cambiarModo = () => {
     setRegistrando((prev) => !prev);
-    setErrores({});
-    setErrorGeneral('');
-  };
-
-  const usarUsuarioPrueba = (email) => {
-    setRegistrando(false);
-    setFormData({ nombre: '', email, password: PASSWORD_PRUEBA });
     setErrores({});
     setErrorGeneral('');
   };
@@ -189,22 +175,6 @@ export default function Login() {
         <button type="button" className="login__cambiar" onClick={cambiarModo}>
           {registrando ? '¿Ya tenés cuenta? Iniciá sesión' : '¿No tenés cuenta? Registrate'}
         </button>
-
-        {import.meta.env.DEV && (
-          <details className="login__prueba">
-            <summary>Usuarios de prueba</summary>
-            <ul>
-              {USUARIOS_PRUEBA.map((u) => (
-                <li key={u.email}>
-                  <button type="button" onClick={() => usarUsuarioPrueba(u.email)}>
-                    <span className="login__prueba-email">{u.email}</span>
-                    <span className="login__prueba-rol">{u.rol}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
       </div>
     </div>
   );

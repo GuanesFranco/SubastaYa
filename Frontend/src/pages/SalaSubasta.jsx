@@ -317,6 +317,8 @@ function Sala({ subastaId }) {
             onVerMas={verMasPujas}
             usuarioId={usuarioId}
             pujaLiderId={subasta.pujaLiderId}
+            rol={estadoParticipante === 'vendedor' || estadoParticipante === 'invitado' ? estadoParticipante : 'comprador'}
+            activa={subasta.estado === 'Activa'}
           />
         </div>
       </div>
