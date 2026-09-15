@@ -76,6 +76,11 @@ public class CrearSubastaCommandHandler : ICommandHandler<CrearSubastaCommand, i
             fechaFin: fechaFin
         );
 
+        if (fechaInicio <= FechaArgentina.AhoraUtc)
+        {
+            subasta.Activar();
+        }
+
         await _subastaRepository.AgregarAsync(subasta, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

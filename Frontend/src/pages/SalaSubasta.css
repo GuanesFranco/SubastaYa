@@ -132,6 +132,28 @@
   color: var(--text-muted);
   font-size: var(--text-lg);
   overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.encabezado__ver-mas {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--accent-text);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.encabezado__ver-mas:hover {
+  color: var(--text-main);
+}
+
+.encabezado__ver-mas:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .encabezado__cifras {

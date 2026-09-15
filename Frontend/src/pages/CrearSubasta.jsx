@@ -165,7 +165,7 @@ export default function CrearSubasta() {
                 value={formData.titulo}
                 onChange={handleChange}
                 placeholder="Ej: Consola PlayStation 5 con dos joysticks"
-                maxLength={120}
+                maxLength={100}
                 required
                 aria-invalid={Boolean(errores.titulo)}
                 aria-describedby={describir('titulo')}

@@ -278,6 +278,17 @@ select.input-field option {
   color: var(--text-main);
 }
 
+input[type="number"].input-field {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"].input-field::-webkit-outer-spin-button,
+input[type="number"].input-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 select.input-field:disabled {
   opacity: 0.6;
   cursor: progress;

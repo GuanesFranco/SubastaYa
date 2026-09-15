@@ -19,6 +19,10 @@ SignalR · JWT + BCrypt · Swagger · xUnit.
   aparte y conectarse a `localhost\SQLEXPRESS` marcando **"Certificado de servidor de
   confianza"**, porque el certificado de SQL Express es autofirmado.
 - [Node.js 20+](https://nodejs.org) para el frontend.
+- **Conexión a internet** mientras se usa la app. Las fotos de las subastas del seed y de la
+  galería de "Publicar" se sirven desde `cdn.dummyjson.com`; sin red, las cards muestran la
+  inicial de la categoría en lugar de la foto. Todo lo demás corre local.
+- En Windows, **Git Bash** para correr el script de concurrencia (`scripts/*.sh`).
 
 ## Cómo levantarlo
 
@@ -78,6 +82,26 @@ Y cinco subastas, una por escenario:
 Las fechas se calculan en el momento del seed, así que los escenarios siguen siendo válidos sin
 importar cuándo se clone el repositorio.
 
+Para volver al estado inicial (por ejemplo, antes de una demo) alcanza con borrar la base y
+arrancar la API de nuevo: `DROP DATABASE SubastaYaDB` desde SSMS, y el próximo `dotnet run`
+la recrea y la vuelve a sembrar.
+
+### Recorrido sugerido
+
+1. **Catálogo** (`/`): filtrar por estado, categoría y precio, buscar por título. Sin sesión se
+   puede mirar todo; para ofertar o publicar hace falta iniciar sesión.
+2. **Sala en vivo** (`/subasta/:id`): abrir la misma subasta en dos ventanas con dos usuarios
+   distintos. La oferta de uno aparece en la otra ventana sin recargar, y también en las cards
+   del catálogo.
+3. **Anti-sniping**: ofertar cuando faltan menos de 60 segundos. El cierre se corre 2 minutos y
+   las dos ventanas lo muestran.
+4. **Rechazo por saldo**: ofertar con `sinfondos@test.com` devuelve `422` y la consola de puja
+   lo explica.
+5. **Billetera** (`/billetera`): cargar saldo simulado y ver los movimientos, incluidas la
+   retención al ofertar y la liberación cuando otro supera la oferta.
+6. **Cierre**: cuando vence una subasta con ofertas, el worker la liquida y la sala muestra el
+   resultado; el ganador ve el débito y el vendedor el crédito en su billetera.
+
 ## Tests
 
 ```bash
@@ -109,10 +133,18 @@ ven ahí:
   conversión a hora local es del cliente.
 - **Los listados vienen paginados**, con la forma
   `{ items, totalItems, page, pageSize, totalPages }`. Se controlan con `?page=` y `?pageSize=`
-  (por defecto 10, máximo 100).
+  (por defecto 10, máximo 100). `GET /api/v1/auctions` filtra además por `estado`,
+  `categoriaId`, `precioMin`, `precioMax`, `busqueda` (por título) y `cerradas=true`
+  (finalizadas y desiertas juntas), y ordena con `orderBy`.
+- **Los enums viajan como texto** (`"Activa"`, `"Finalizada"`, `"Deposito"`), tanto en la API
+  como en los eventos del hub.
 - **Hub de SignalR en `/hubs/auctions`.** El cliente llama a `JoinAuctionGroup(subastaId)` al
   entrar a la sala y recibe solo los eventos de esa subasta: `BidPlaced`, `AuctionExtended`
   (se aplicó el anti-sniping) y `AuctionClosed` (el worker la cerró, con ganador o desierta).
+  El catálogo usa `JoinCatalogGroup()`, que recibe esos mismos eventos para todas las
+  subastas y le permite actualizar las cards en vivo.
+- **Una subasta cuyo inicio ya pasó nace `Activa`**; si el inicio es futuro nace `Programada` y
+  el worker la activa en su ciclo (cada 10 segundos).
 
 ## Frontend
 
@@ -127,4 +159,8 @@ npm run dev
 ```
 
 Con el backend corriendo (ver "Cómo levantarlo" arriba), la app queda en
-**http://localhost:5173**.
+**http://localhost:5173**. El puerto es fijo: si está ocupado, Vite falla en vez de cambiarlo,
+porque el CORS del backend está atado a ese origen.
+
+`npm run lint` corre `oxlint` y tiene que quedar en cero. `npm run build` genera la versión de
+producción en `dist/`.
