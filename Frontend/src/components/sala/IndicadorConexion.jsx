@@ -3,7 +3,7 @@ import { ESTADOS_CONEXION } from '../../hooks/useAuctionHub';
 
 const TEXTOS = {
   [ESTADOS_CONEXION.CONECTANDO]: 'Conectando…',
-  [ESTADOS_CONEXION.CONECTADO]: 'En vivo',
+  [ESTADOS_CONEXION.CONECTADO]: 'Conectado',
   [ESTADOS_CONEXION.RECONECTANDO]: 'Reconectando…',
   [ESTADOS_CONEXION.DESCONECTADO]: 'Sin conexión'
 };

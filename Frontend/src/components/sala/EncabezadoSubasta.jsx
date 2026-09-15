@@ -10,6 +10,8 @@ const ETIQUETA_ESTADO = {
   Desierta: 'Desierta'
 };
 
+const DESCRIPCION_CORTA = 300;
+
 const ETIQUETA_PRECIO = {
   Activa: 'Precio actual',
   Programada: 'Precio inicial',
@@ -24,6 +26,12 @@ export default function EncabezadoSubasta({ subasta, ultimoMinuto, estadoConexio
   const precio = subasta.precioActual || subasta.precioBase || 0;
   const [precioInicial] = useState(precio);
   const precioCambio = precio !== precioInicial;
+  const [descripcionCompleta, setDescripcionCompleta] = useState(false);
+  const descripcion = subasta.descripcion || '';
+  const descripcionLarga = descripcion.length > DESCRIPCION_CORTA + 60;
+  const textoDescripcion = descripcionLarga && !descripcionCompleta
+    ? `${descripcion.slice(0, DESCRIPCION_CORTA).trimEnd()}…`
+    : descripcion;
 
   return (
     <section className="glass-panel encabezado" data-fase={activa && ultimoMinuto ? 'critica' : 'normal'} data-estado={subasta.estado}>
@@ -52,8 +60,23 @@ export default function EncabezadoSubasta({ subasta, ultimoMinuto, estadoConexio
       {subasta.vendedorNombre && (
         <p className="encabezado__vendedor">Publicada por <strong>{subasta.vendedorNombre}</strong></p>
       )}
-      {subasta.descripcion && (
-        <p className="encabezado__descripcion">{subasta.descripcion}</p>
+      {descripcion && (
+        <p className="encabezado__descripcion">
+          {textoDescripcion}
+          {descripcionLarga && (
+            <>
+              {' '}
+              <button
+                type="button"
+                className="encabezado__ver-mas"
+                onClick={() => setDescripcionCompleta((v) => !v)}
+                aria-expanded={descripcionCompleta}
+              >
+                {descripcionCompleta ? 'Ver menos' : 'Ver más'}
+              </button>
+            </>
+          )}
+        </p>
       )}
 
       <div className="encabezado__cifras">
