@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { descomponerDuracion } from '../utils/formato';
 
 const UN_MINUTO = 60 * 1000;
-const UN_DIA = 24 * 60 * 60 * 1000;
+const CINCO_MINUTOS = 5 * UN_MINUTO;
+const UNA_HORA = 60 * UN_MINUTO;
+const UN_DIA = 24 * UNA_HORA;
 
 const suscriptores = new Set();
 let intervalo = null;
@@ -42,6 +44,19 @@ export default function useCountdown(fechaFin, activo = true) {
     ...partes,
     terminado: ms !== null && ms <= 0,
     ultimoMinuto: ms !== null && ms > 0 && ms < UN_MINUTO,
+    critico: ms !== null && ms >= UN_MINUTO && ms < CINCO_MINUTOS,
+    proximo: ms !== null && ms >= CINCO_MINUTOS && ms < UNA_HORA,
     lejano: ms !== null && ms > UN_DIA
   };
+}
+
+export function useAhora(habilitado = true) {
+  const [ahora, setAhora] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!habilitado) return undefined;
+    return suscribir(setAhora);
+  }, [habilitado]);
+
+  return ahora;
 }

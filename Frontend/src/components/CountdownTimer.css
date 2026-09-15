@@ -49,11 +49,20 @@
 }
 
 .countdown--cerrando {
-  color: var(--warning);
+  color: var(--warning-text);
+}
+
+.countdown--proximo {
+  color: var(--warning-text);
+}
+
+.countdown--critico {
+  color: var(--danger-text);
+  animation: countdown-latido 1.6s ease-in-out infinite;
 }
 
 .countdown--urgente {
-  color: var(--danger);
+  color: var(--danger-text);
   animation: countdown-latido 1s ease-in-out infinite;
 }
 
@@ -63,7 +72,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .countdown--urgente {
+  .countdown--urgente,
+  .countdown--critico {
     animation: none;
   }
 }

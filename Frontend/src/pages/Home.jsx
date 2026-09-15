@@ -7,6 +7,7 @@ import Skeleton from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 import EstadoError from '../components/EstadoError';
 import useRecurso from '../hooks/useRecurso';
+import useCatalogoHub from '../hooks/useCatalogoHub';
 import useTitulo from '../hooks/useTitulo';
 import { plural } from '../utils/formato';
 import './Home.css';
@@ -168,7 +169,37 @@ export default function Home() {
     || secundariosActivos > 0
   );
 
-  const items = subastas.datos ? subastas.datos.items || [] : [];
+  const [vivo, setVivo] = useState({ base: null, parches: {} });
+  if (vivo.base !== subastas.datos) {
+    setVivo({ base: subastas.datos, parches: {} });
+  }
+
+  const parchar = (id, cambios) => {
+    setVivo((prev) => {
+      const anterior = prev.parches[id] || {};
+      const nuevo = typeof cambios === 'function' ? cambios(anterior) : { ...anterior, ...cambios };
+      return { ...prev, parches: { ...prev.parches, [id]: { ...nuevo, actualizadoEn: Date.now() } } };
+    });
+  };
+
+  useCatalogoHub({
+    onBidPlaced: (evento) => parchar(evento.subastaId, (p) => ({
+      ...p,
+      precioActual: evento.monto,
+      fechaFin: evento.fechaFin,
+      fechaUltimaPuja: evento.fechaPuja,
+      ofertasExtra: (p.ofertasExtra || 0) + 1
+    })),
+    onAuctionExtended: (evento) => parchar(evento.subastaId, { fechaFin: evento.nuevaFechaFin }),
+    onAuctionClosed: (evento) => parchar(evento.subastaId, { estado: evento.estado, montoFinal: evento.montoFinal })
+  }, Boolean(subastas.datos));
+
+  const items = (subastas.datos ? subastas.datos.items || [] : []).map((item) => {
+    const parche = vivo.parches[item.id];
+    if (!parche) return item;
+    const { ofertasExtra = 0, ...resto } = parche;
+    return { ...item, ...resto, cantidadPujas: (item.cantidadPujas ?? 0) + ofertasExtra };
+  });
   const totalPages = subastas.datos ? subastas.datos.totalPages || 0 : 0;
   const totalItems = subastas.datos ? subastas.datos.totalItems || 0 : 0;
 

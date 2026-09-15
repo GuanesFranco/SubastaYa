@@ -56,7 +56,7 @@
   height: 100%;
 }
 
-.buscador__campo {
+.buscador .buscador__campo {
   padding-left: calc(var(--space-4) + 1.1rem + var(--space-2));
 }
 
@@ -110,7 +110,7 @@
   color: var(--bg-page);
 }
 
-.filtros__toggle {
+.filtros .filtros__toggle {
   display: none;
 }
 
@@ -198,7 +198,7 @@
     min-width: 0;
   }
 
-  .filtros__toggle {
+  .filtros .filtros__toggle {
     display: inline-flex;
     flex: 0 0 auto;
   }

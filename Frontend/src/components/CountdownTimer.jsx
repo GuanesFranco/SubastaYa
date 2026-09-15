@@ -38,7 +38,10 @@ export default function CountdownTimer({ fechaFin, estado, tamano = 'sm', conIco
     descripcion = texto;
   } else {
     texto = formatoDuracion(countdown.ms);
-    variante = countdown.ultimoMinuto ? 'urgente' : 'normal';
+    if (countdown.ultimoMinuto) variante = 'urgente';
+    else if (countdown.critico) variante = 'critico';
+    else if (countdown.proximo) variante = 'proximo';
+    else variante = 'normal';
     const { horas, minutos, segundos } = countdown;
     descripcion = horas > 0
       ? `Quedan ${plural(horas, 'hora', 'horas')} y ${plural(minutos, 'minuto', 'minutos')}`

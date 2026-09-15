@@ -152,6 +152,20 @@
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
+  border-radius: var(--radius-sm);
+}
+
+.auction-card__precio-valor--nuevo {
+  animation: precio-nuevo 1.2s var(--ease-out) both;
+}
+
+@keyframes precio-nuevo {
+  0% { background-color: var(--success-bg); color: var(--success-text); }
+  100% { background-color: transparent; color: inherit; }
+}
+
+.auction-card__ultima {
+  color: var(--text-subtle);
 }
 
 .auction-card__pie {
@@ -218,6 +232,10 @@
 @media (prefers-reduced-motion: reduce) {
   .auction-card:hover .auction-card__imagen {
     transform: none;
+  }
+
+  .auction-card__precio-valor--nuevo {
+    animation: none;
   }
 
   .auction-card[data-estado="Activa"] .auction-card__punto {

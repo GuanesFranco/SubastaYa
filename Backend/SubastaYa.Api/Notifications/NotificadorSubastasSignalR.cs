@@ -36,7 +36,9 @@ public class NotificadorSubastasSignalR : INotificadorSubastas
     {
         try
         {
-            await _hub.Clients.Group(AuctionHub.NombreGrupo(subastaId)).SendAsync(evento, payload);
+            await _hub.Clients
+                .Groups(AuctionHub.NombreGrupo(subastaId), AuctionHub.GrupoCatalogo)
+                .SendAsync(evento, payload);
         }
         catch (Exception ex)
         {

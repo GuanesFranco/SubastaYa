@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import CountdownTimer from './CountdownTimer';
-import { formatoARS, plural } from '../utils/formato';
+import { useAhora } from '../hooks/useCountdown';
+import { formatoARS, formatoRelativo, plural } from '../utils/formato';
 import './AuctionCard.css';
 
 const ETIQUETA_ESTADO = {
@@ -26,6 +27,9 @@ export default function AuctionCard({ auction }) {
   const inicial = (auction.categoriaNombre || auction.titulo || 'S').trim().charAt(0).toUpperCase();
   const precio = auction.montoFinal ?? auction.precioActual ?? auction.precioBase ?? 0;
   const tieneConteo = auction.cantidadPujas !== undefined && auction.cantidadPujas !== null;
+  const activa = estado === 'Activa';
+  const mostrarUltimaOferta = activa && Boolean(auction.fechaUltimaPuja) && (auction.cantidadPujas ?? 0) > 0;
+  const ahora = useAhora(mostrarUltimaOferta);
   const idTitulo = `subasta-${auction.id}-titulo`;
   const idPrecio = `subasta-${auction.id}-precio`;
   const idCta = `subasta-${auction.id}-cta`;
@@ -66,12 +70,21 @@ export default function AuctionCard({ auction }) {
 
         <div className="auction-card__precio">
           <span className="auction-card__precio-etiqueta">{ETIQUETA_PRECIO[estado] || 'Precio'}</span>
-          <strong className="auction-card__precio-valor" id={idPrecio}>{formatoARS(precio)}</strong>
+          <strong
+            key={auction.actualizadoEn || 'estable'}
+            className={`auction-card__precio-valor${auction.actualizadoEn ? ' auction-card__precio-valor--nuevo' : ''}`}
+            id={idPrecio}
+          >
+            {formatoARS(precio)}
+          </strong>
         </div>
 
         <div className="auction-card__pie">
           <span className="auction-card__ofertas">
             {tieneConteo ? plural(auction.cantidadPujas, 'oferta', 'ofertas', 'Sin ofertas') : ''}
+            {mostrarUltimaOferta && (
+              <span className="auction-card__ultima"> · {formatoRelativo(auction.fechaUltimaPuja, ahora)}</span>
+            )}
           </span>
           <CountdownTimer fechaFin={auction.fechaFin} estado={estado} tamano="sm" />
         </div>
