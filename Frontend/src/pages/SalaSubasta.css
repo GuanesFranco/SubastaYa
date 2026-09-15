@@ -54,7 +54,7 @@
   font-weight: 600;
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
-  color: var(--accent-primary);
+  color: var(--accent-text);
 }
 
 .encabezado__indicadores {
@@ -413,7 +413,7 @@
 }
 
 .consola__mensaje a {
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-weight: 600;
 }
 

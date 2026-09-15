@@ -79,7 +79,7 @@
 }
 
 .metrica--principal {
-  border-left: 4px solid var(--success);
+  border-top: 1px solid var(--success-border);
 }
 
 .metrica__etiqueta {

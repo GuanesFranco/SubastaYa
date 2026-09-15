@@ -2,7 +2,15 @@ import React from 'react';
 import { plural } from '../utils/formato';
 import './Paginador.css';
 
-export default function Paginador({ page, totalPages, totalItems, onChange, disabled = false }) {
+export default function Paginador({
+  page,
+  totalPages,
+  totalItems,
+  onChange,
+  disabled = false,
+  singular = 'resultado',
+  pluralPalabra = 'resultados'
+}) {
   if (!totalPages || totalPages <= 1) return null;
 
   const hayAnterior = page > 1 && !disabled;
@@ -30,7 +38,7 @@ export default function Paginador({ page, totalPages, totalItems, onChange, disa
       <span className="paginador__info">
         Página <strong>{page}</strong> de {totalPages}
         {typeof totalItems === 'number' && (
-          <span className="paginador__total"> · {plural(totalItems, 'resultado', 'resultados')}</span>
+          <span className="paginador__total"> · {plural(totalItems, singular, pluralPalabra)}</span>
         )}
       </span>
 

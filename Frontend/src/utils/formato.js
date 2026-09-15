@@ -1,4 +1,9 @@
-const moneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+const moneda = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+});
 const fechaHora = new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' });
 const relativo = new Intl.RelativeTimeFormat('es-AR', { numeric: 'auto' });
 

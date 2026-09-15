@@ -1,12 +1,12 @@
 import React from 'react';
 import useCountdown from '../hooks/useCountdown';
-import { formatoDuracion, formatoFechaHora } from '../utils/formato';
+import { formatoDuracion, formatoFechaHora, plural } from '../utils/formato';
 import './CountdownTimer.css';
 
 const ETIQUETAS_INACTIVO = {
   Programada: 'Próximamente',
   Finalizada: 'Finalizada',
-  Desierta: 'Desierta'
+  Desierta: 'Sin ofertas'
 };
 
 const ICONO_RELOJ = (
@@ -38,11 +38,14 @@ export default function CountdownTimer({ fechaFin, estado, tamano = 'sm', conIco
     descripcion = texto;
   } else {
     texto = formatoDuracion(countdown.ms);
-    variante = countdown.ultimoMinuto ? 'urgente' : 'normal';
+    if (countdown.ultimoMinuto) variante = 'urgente';
+    else if (countdown.critico) variante = 'critico';
+    else if (countdown.proximo) variante = 'proximo';
+    else variante = 'normal';
     const { horas, minutos, segundos } = countdown;
     descripcion = horas > 0
-      ? `Quedan ${horas} horas y ${minutos} minutos`
-      : `Quedan ${minutos} minutos y ${segundos} segundos`;
+      ? `Quedan ${plural(horas, 'hora', 'horas')} y ${plural(minutos, 'minuto', 'minutos')}`
+      : `Quedan ${plural(minutos, 'minuto', 'minutos')} y ${plural(segundos, 'segundo', 'segundos')}`;
   }
 
   return (

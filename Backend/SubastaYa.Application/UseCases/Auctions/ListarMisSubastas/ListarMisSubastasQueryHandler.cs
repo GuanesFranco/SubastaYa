@@ -30,7 +30,11 @@ public class ListarMisSubastasQueryHandler : IQueryHandler<ListarMisSubastasQuer
 
         return new PaginatedResult<SubastaResumenDto>
         {
-            Items = items.Select(d => d with { FechaFin = FechaArgentina.ComoUtc(d.FechaFin) }).ToList(),
+            Items = items.Select(d => d with
+            {
+                FechaFin = FechaArgentina.ComoUtc(d.FechaFin),
+                FechaUltimaPuja = d.FechaUltimaPuja.HasValue ? FechaArgentina.ComoUtc(d.FechaUltimaPuja.Value) : null
+            }).ToList(),
             TotalItems = total,
             Page = page,
             PageSize = pageSize

@@ -13,18 +13,23 @@ function Bloque({ ancho, alto, radio, className = '' }) {
 function SkeletonCard() {
   return (
     <div className="skeleton-card glass-panel">
-      <Bloque ancho="100%" alto="180px" radio="0" className="skeleton-card__imagen" />
+      <div className="skeleton-card__media">
+        <Bloque ancho="72px" alto="22px" radio="var(--radius-full)" className="skeleton-card__estado" />
+      </div>
       <div className="skeleton-card__cuerpo">
-        <div className="skeleton-card__fila">
+        <Bloque ancho="30%" alto="12px" />
+        <Bloque ancho="85%" alto="20px" />
+        <div className="skeleton-card__precio">
           <Bloque ancho="35%" alto="12px" />
-          <Bloque ancho="20%" alto="20px" radio="var(--radius-full)" />
+          <Bloque ancho="55%" alto="28px" />
         </div>
-        <Bloque ancho="90%" alto="18px" />
-        <Bloque ancho="60%" alto="18px" />
         <div className="skeleton-card__pie">
-          <Bloque ancho="45%" alto="28px" />
-          <Bloque ancho="30%" alto="36px" radio="var(--radius-md)" />
+          <Bloque ancho="35%" alto="14px" />
+          <Bloque ancho="30%" alto="14px" />
         </div>
+      </div>
+      <div className="skeleton-card__cta">
+        <Bloque ancho="34%" alto="14px" />
       </div>
     </div>
   );

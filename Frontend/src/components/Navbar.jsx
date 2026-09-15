@@ -27,7 +27,7 @@ export default function Navbar() {
         SubastaYa
       </Link>
 
-      <nav className="navbar__links" aria-label="Principal">
+      <nav className={`navbar__links${isAuthenticated ? '' : ' navbar__links--invitado'}`} aria-label="Principal">
         {isAuthenticated ? (
           <>
             <NavLink to="/" end className={claseLink}>Catálogo</NavLink>
@@ -36,7 +36,11 @@ export default function Navbar() {
             <NavLink to="/publicar" className="btn btn-primary btn-sm navbar__publicar">+ Publicar</NavLink>
           </>
         ) : (
-          <NavLink to="/login" className="btn btn-primary btn-sm">Iniciar sesión</NavLink>
+          <div className="navbar__invitado">
+            <NavLink to="/publicar" className="btn btn-ghost btn-sm">Publicar</NavLink>
+            <Link to="/login" className="navbar__link navbar__crear">Crear cuenta</Link>
+            <NavLink to="/login" className="btn btn-primary btn-sm">Iniciar sesión</NavLink>
+          </div>
         )}
       </nav>
 

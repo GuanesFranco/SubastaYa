@@ -3,8 +3,17 @@ import { formatoARS, plural } from '../../utils/formato';
 
 const hora = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-export default function HistorialPujas({ items, total, cargando, onVerMas, usuarioId, pujaLiderId }) {
+const VACIO_POR_ROL = {
+  vendedor: 'Todavía nadie ofertó por tu subasta.',
+  invitado: 'Todavía no hay ofertas. Iniciá sesión para ser el primero.',
+  cerrada: 'Esta subasta cerró sin ofertas.'
+};
+
+export default function HistorialPujas({ items, total, cargando, onVerMas, usuarioId, pujaLiderId, rol = 'comprador', activa = true }) {
   const restantes = Math.max(0, total - items.length);
+  const textoVacio = !activa
+    ? VACIO_POR_ROL.cerrada
+    : VACIO_POR_ROL[rol] || 'Todavía no hay ofertas. Podés ser el primero.';
 
   return (
     <section className="glass-panel historial">
@@ -14,7 +23,7 @@ export default function HistorialPujas({ items, total, cargando, onVerMas, usuar
       </div>
 
       {items.length === 0 ? (
-        <p className="historial__vacio">Todavía no hay ofertas. Podés ser el primero.</p>
+        <p className="historial__vacio">{textoVacio}</p>
       ) : (
         <ol className="historial__lista">
           {items.map((puja, indice) => {

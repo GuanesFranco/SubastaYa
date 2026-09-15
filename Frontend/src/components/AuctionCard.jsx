@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import CountdownTimer from './CountdownTimer';
-import { formatoARS, plural } from '../utils/formato';
+import { useAhora } from '../hooks/useCountdown';
+import { formatoARS, formatoRelativo, plural } from '../utils/formato';
 import './AuctionCard.css';
 
 const ETIQUETA_ESTADO = {
   Activa: 'En vivo',
   Programada: 'Próximamente',
   Finalizada: 'Finalizada',
-  Desierta: 'Desierta'
+  Desierta: 'Sin ofertas'
 };
 
 const ETIQUETA_PRECIO = {
@@ -26,9 +27,20 @@ export default function AuctionCard({ auction }) {
   const inicial = (auction.categoriaNombre || auction.titulo || 'S').trim().charAt(0).toUpperCase();
   const precio = auction.montoFinal ?? auction.precioActual ?? auction.precioBase ?? 0;
   const tieneConteo = auction.cantidadPujas !== undefined && auction.cantidadPujas !== null;
+  const activa = estado === 'Activa';
+  const mostrarUltimaOferta = activa && Boolean(auction.fechaUltimaPuja) && (auction.cantidadPujas ?? 0) > 0;
+  const ahora = useAhora(mostrarUltimaOferta);
+  const idTitulo = `subasta-${auction.id}-titulo`;
+  const idPrecio = `subasta-${auction.id}-precio`;
+  const idCta = `subasta-${auction.id}-cta`;
 
   return (
-    <Link to={`/subasta/${auction.id}`} className="auction-card" data-estado={estado}>
+    <Link
+      to={`/subasta/${auction.id}`}
+      className="auction-card"
+      data-estado={estado}
+      aria-labelledby={`${idTitulo} ${idPrecio} ${idCta}`}
+    >
       <div className="auction-card__media">
         {mostrarImagen ? (
           <img
@@ -53,23 +65,34 @@ export default function AuctionCard({ auction }) {
       </div>
 
       <div className="auction-card__cuerpo">
-        <span className="auction-card__categoria">{auction.categoriaNombre || 'General'}</span>
-        <h3 className="auction-card__titulo">{auction.titulo}</h3>
+        <div className="auction-card__encabezado">
+          <h3 className="auction-card__titulo" id={idTitulo}>{auction.titulo}</h3>
+          <span className="auction-card__categoria">{auction.categoriaNombre || 'General'}</span>
+        </div>
 
         <div className="auction-card__precio">
           <span className="auction-card__precio-etiqueta">{ETIQUETA_PRECIO[estado] || 'Precio'}</span>
-          <strong className="auction-card__precio-valor">{formatoARS(precio)}</strong>
+          <strong
+            key={auction.actualizadoEn || 'estable'}
+            className={`auction-card__precio-valor${auction.actualizadoEn ? ' auction-card__precio-valor--nuevo' : ''}`}
+            id={idPrecio}
+          >
+            {formatoARS(precio)}
+          </strong>
         </div>
 
         <div className="auction-card__pie">
           <span className="auction-card__ofertas">
             {tieneConteo ? plural(auction.cantidadPujas, 'oferta', 'ofertas', 'Sin ofertas') : ''}
+            {mostrarUltimaOferta && (
+              <span className="auction-card__ultima"> · {formatoRelativo(auction.fechaUltimaPuja, ahora)}</span>
+            )}
           </span>
           <CountdownTimer fechaFin={auction.fechaFin} estado={estado} tamano="sm" />
         </div>
       </div>
 
-      <span className="auction-card__cta" aria-hidden="true">
+      <span className="auction-card__cta" id={idCta}>
         Ver subasta
         <svg viewBox="0 0 20 20">
           <path d="M4 10h11M11 5l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

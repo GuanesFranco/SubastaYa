@@ -28,11 +28,15 @@ public class ListarSubastasQueryHandler : IQueryHandler<ListarSubastasQuery, Pag
         var (page, pageSize) = Paginacion.Normalizar(f.Page, f.PageSize);
 
         var (items, total) = await _subastaRepository.ObtenerFiltradasAsync(
-            f.CategoriaId, f.Estado, f.PrecioMin, f.PrecioMax, f.OrderBy, page, pageSize, cancellationToken);
+            f.CategoriaId, f.Estado, f.Cerradas, f.Busqueda, f.PrecioMin, f.PrecioMax, f.OrderBy, page, pageSize, cancellationToken);
 
         return new PaginatedResult<SubastaResumenDto>
         {
-            Items = items.Select(d => d with { FechaFin = FechaArgentina.ComoUtc(d.FechaFin) }).ToList(),
+            Items = items.Select(d => d with
+            {
+                FechaFin = FechaArgentina.ComoUtc(d.FechaFin),
+                FechaUltimaPuja = d.FechaUltimaPuja.HasValue ? FechaArgentina.ComoUtc(d.FechaUltimaPuja.Value) : null
+            }).ToList(),
             TotalItems = total,
             Page = page,
             PageSize = pageSize

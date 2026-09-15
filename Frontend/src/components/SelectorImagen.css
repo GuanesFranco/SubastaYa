@@ -27,8 +27,8 @@
 
 .selector-imagen__opcion:hover {
   border-color: var(--glass-border-strong);
+  background: var(--surface-raised);
   color: var(--text-main);
-  transform: translateY(-2px);
 }
 
 .selector-imagen__opcion:focus-visible {
@@ -84,7 +84,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font: inherit;
   font-size: var(--text-sm);
   font-weight: 600;
@@ -98,8 +98,3 @@
   border-radius: var(--radius-sm);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .selector-imagen__opcion:hover {
-    transform: none;
-  }
-}
