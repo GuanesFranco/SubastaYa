@@ -52,6 +52,8 @@ function Sala({ subastaId }) {
   const subastaRef = useLatest(subasta);
   const pujasVisiblesRef = useLatest(pujasVisibles);
   const fechaFinPreviaRef = useRef(null);
+  const pujaEnCursoRef = useRef(false);
+  const extensionPropiaRef = useRef(null);
   const exitoTimerRef = useRef(null);
 
   const saldo = useRecurso(
@@ -136,7 +138,8 @@ function Sala({ subastaId }) {
       fechaFinPreviaRef.current = null;
       setSubasta((prev) => (prev ? { ...prev, fechaFin: evento.nuevaFechaFin } : prev));
       setExtension({ id: Date.now(), ms });
-      toast.aviso('Se sumó tiempo por una oferta en el último minuto.');
+      const propia = pujaEnCursoRef.current || extensionPropiaRef.current === evento.nuevaFechaFin;
+      if (!propia) toast.aviso('Se sumó tiempo por una oferta en el último minuto.');
     },
     onAuctionClosed: (evento) => {
       const estado = normalizarEstado(evento.estado);
@@ -176,10 +179,12 @@ function Sala({ subastaId }) {
     const monto = Number(montoManual ?? calcularMontoSugerido(subasta));
 
     setPujando(true);
+    pujaEnCursoRef.current = true;
     fechaFinPreviaRef.current = subasta.fechaFin;
     try {
       const res = await api.post(`/auctions/${subastaId}/bids`, { monto });
 
+      if (res.data.tiempoExtendido) extensionPropiaRef.current = res.data.fechaFin;
       setHeParticipado(true);
       setMontoManual(null);
       marcarExito();
@@ -201,6 +206,7 @@ function Sala({ subastaId }) {
         fetchHistorial(pujasVisiblesRef.current);
       }
     } finally {
+      pujaEnCursoRef.current = false;
       setPujando(false);
     }
   };
