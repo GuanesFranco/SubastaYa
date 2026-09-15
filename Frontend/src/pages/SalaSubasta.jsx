@@ -125,6 +125,7 @@ function Sala({ subastaId }) {
       if (meSuperaron) {
         setAlertaSuperado((k) => k + 1);
         toast.error('Te superaron. Hacé una nueva oferta para volver a liderar.');
+        saldo.recargar();
       }
 
       fetchHistorial(pujasVisiblesRef.current);
@@ -143,6 +144,8 @@ function Sala({ subastaId }) {
       setSubasta((prev) => (prev ? { ...prev, estado } : prev));
       if (evento.ganadorUsuarioId === usuarioId) toast.exito('¡Ganaste la subasta!');
       else toast.info('La subasta finalizó.');
+      const actual = subastaRef.current;
+      if (usuarioId && (evento.ganadorUsuarioId === usuarioId || (actual && actual.vendedorId === usuarioId))) saldo.recargar();
       fetchSubasta({ silencioso: true });
     },
     onReconnected: () => {

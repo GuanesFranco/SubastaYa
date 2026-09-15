@@ -74,12 +74,12 @@ export default function EncabezadoSubasta({ subasta, ultimoMinuto, estadoConexio
             <strong className="cifra__valor cifra__valor--fecha">{formatoFechaHora(subasta.fechaInicio)}</strong>
           ) : (
             <span className="cifra__reloj">
-              <span key={extension ? extension.id : 'reloj'} className={`cifra__reloj-interno${extension ? ' cifra__reloj-interno--latido' : ''}`}>
+              <span key={extension ? `latido-${extension.id}` : 'reloj'} className={`cifra__reloj-interno${extension ? ' cifra__reloj-interno--latido' : ''}`}>
                 <CountdownTimer fechaFin={subasta.fechaFin} estado={subasta.estado} tamano="lg" conIcono={false} />
               </span>
               {extension && (
                 <span
-                  key={extension.id}
+                  key={`extension-${extension.id}`}
                   className="cifra__extension"
                   onAnimationEnd={onExtensionFin}
                   aria-hidden="true"
