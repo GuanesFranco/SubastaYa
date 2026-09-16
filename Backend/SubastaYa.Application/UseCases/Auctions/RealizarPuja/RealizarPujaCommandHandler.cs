@@ -51,6 +51,11 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
             throw new DomainException("La subasta no está activa.");
         }
 
+        if (subasta.VendedorId == command.CompradorId)
+        {
+            throw new DomainException("No podés pujar en tu propia subasta.");
+        }
+
         var montoMinimo = subasta.PrecioActual + subasta.IncrementoMinimo;
         if (command.Monto < montoMinimo)
         {

@@ -9,7 +9,7 @@
 set -u
 
 API="${1:-http://localhost:5058/api/v1}"
-SUBASTA_ID="${2:-1}"
+SUBASTA_ID="${2:-auto}"
 PASSWORD="Test1234!"
 
 login() {
@@ -26,6 +26,22 @@ TOKEN_2="$(login comprador2@test.com)"
 if [ -z "$TOKEN_1" ] || [ -z "$TOKEN_2" ]; then
     echo "ERROR: no se pudo obtener el token. ¿Está levantada la API en $API?"
     exit 1
+fi
+
+if [ "$SUBASTA_ID" = "auto" ]; then
+    echo "== Creando una nueva subasta automáticamente =="
+    TOKEN_VENDEDOR="$(login vendedor@test.com)"
+    CREACION=$(curl -s -X POST "$API/auctions" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $TOKEN_VENDEDOR" \
+        -d "{\"titulo\":\"Prueba de concurrencia automatica\",\"descripcion\":\"Generada por el script\",\"precioBase\":1000,\"incrementoMinimo\":100,\"fechaInicio\":\"2020-01-01T00:00:00Z\",\"fechaFin\":\"2030-01-01T00:00:00Z\",\"categoriaId\":1,\"urlImagen\":\"https://test.com/img.jpg\"}")
+    
+    SUBASTA_ID="$(echo "$CREACION" | grep -o '"id":[0-9]*' | head -n 1 | cut -d':' -f2)"
+    if [ -z "$SUBASTA_ID" ]; then
+        echo "ERROR: no se pudo crear la subasta automática."
+        exit 1
+    fi
+    echo "   Subasta creada con ID: $SUBASTA_ID"
 fi
 
 echo "== Leyendo el estado de la subasta $SUBASTA_ID =="
