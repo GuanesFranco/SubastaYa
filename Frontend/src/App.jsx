@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AuthProvider from './context/AuthProvider';
+import SaldoProvider from './context/SaldoProvider';
 import useAuth from './hooks/useAuth';
 import ToastProvider from './components/ToastProvider';
 import Navbar from './components/Navbar';
@@ -69,9 +70,11 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
+        <SaldoProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </SaldoProvider>
       </ToastProvider>
     </AuthProvider>
   );
