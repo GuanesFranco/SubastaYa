@@ -1,14 +1,12 @@
 using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common;
-using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
-using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.Interfaces.Persistence;
 using SubastaYa.Application.Interfaces.Services;
 
 namespace SubastaYa.Application.UseCases.Auctions.ListarMisSubastas;
 
-public class ListarMisSubastasQueryHandler : IQueryHandler<ListarMisSubastasQuery, PaginatedResult<SubastaResumenDto>>
+public class ListarMisSubastasQueryHandler : IQueryHandler<ListarMisSubastasQuery, MisSubastasResult>
 {
     private readonly ILogger<ListarMisSubastasQueryHandler> _logger;
     private readonly ISubastaRepository _repository;
@@ -19,7 +17,7 @@ public class ListarMisSubastasQueryHandler : IQueryHandler<ListarMisSubastasQuer
         _repository = repository;
     }
 
-    public async Task<PaginatedResult<SubastaResumenDto>> Handle(
+    public async Task<MisSubastasResult> Handle(
         ListarMisSubastasQuery query, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Ejecutando ListarMisSubastasQueryHandler...");
@@ -27,17 +25,15 @@ public class ListarMisSubastasQueryHandler : IQueryHandler<ListarMisSubastasQuer
         var (page, pageSize) = Paginacion.Normalizar(query.Page, query.PageSize);
         var (items, total) = await _repository.ObtenerSubastasPorVendedorAsync(
             query.VendedorId, page, pageSize, cancellationToken);
+        var metricas = await _repository.ObtenerMetricasVendedorAsync(query.VendedorId, cancellationToken);
 
-        return new PaginatedResult<SubastaResumenDto>
+        return new MisSubastasResult
         {
-            Items = items.Select(d => d with
-            {
-                FechaFin = FechaArgentina.ComoUtc(d.FechaFin),
-                FechaUltimaPuja = d.FechaUltimaPuja.HasValue ? FechaArgentina.ComoUtc(d.FechaUltimaPuja.Value) : null
-            }).ToList(),
+            Items = items.ToList(),
             TotalItems = total,
             Page = page,
-            PageSize = pageSize
+            PageSize = pageSize,
+            Metricas = metricas
         };
     }
 }

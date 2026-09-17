@@ -130,6 +130,31 @@ public class SubastaRepository : ISubastaRepository
         return (items, total);
     }
 
+    public async Task<MetricasVendedorDto> ObtenerMetricasVendedorAsync(
+        int vendedorId, CancellationToken cancellationToken = default)
+    {
+        var metricas = await _context.Subastas
+            .AsNoTracking()
+            .Where(s => s.VendedorId == vendedorId)
+            .GroupBy(s => 1)
+            .Select(g => new MetricasVendedorDto(
+                g.Count(),
+                g.Count(s => s.Estado == EstadoSubasta.Finalizada && s.MontoFinal != null),
+                g.Sum(s => s.Estado == EstadoSubasta.Finalizada ? (s.MontoFinal ?? 0m) : 0m),
+                g.Count(s => s.Estado == EstadoSubasta.Activa || s.Estado == EstadoSubasta.Programada)))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return metricas ?? new MetricasVendedorDto(0, 0, 0m, 0);
+    }
+
+    public async Task<bool> ExisteMiPujaAsync(
+        int subastaId, int compradorId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Pujas
+            .AsNoTracking()
+            .AnyAsync(p => p.SubastaId == subastaId && p.CompradorId == compradorId, cancellationToken);
+    }
+
     public async Task<Subasta?> ObtenerParaPujarAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _context.Subastas

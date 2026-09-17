@@ -4,7 +4,7 @@ import api from '../services/api';
 import useRecurso from '../hooks/useRecurso';
 import useToast from '../hooks/useToast';
 import useTitulo from '../hooks/useTitulo';
-import { aDatetimeLocal, describirDuracion, formatoARS } from '../utils/formato';
+import { aDatetimeLocal, aUtcIso, describirDuracion, formatoARS } from '../utils/formato';
 import { mensajeDeError, TIPOS_ERROR } from '../utils/errores';
 import SelectorImagen from '../components/SelectorImagen';
 import './CrearSubasta.css';
@@ -111,7 +111,9 @@ export default function CrearSubasta() {
         urlImagen: formData.urlImagen.trim(),
         categoriaId: Number(formData.categoriaId),
         precioBase: Number(formData.precioBase),
-        incrementoMinimo: Number(formData.incrementoMinimo)
+        incrementoMinimo: Number(formData.incrementoMinimo),
+        fechaInicio: aUtcIso(formData.fechaInicio),
+        fechaFin: aUtcIso(formData.fechaFin)
       };
       const response = await api.post('/auctions', payload);
       toast.exito('Subasta publicada.');

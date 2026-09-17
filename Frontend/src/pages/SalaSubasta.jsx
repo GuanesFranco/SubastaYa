@@ -86,13 +86,12 @@ function Sala({ subastaId }) {
       const res = await api.get(`/auctions/${subastaId}/bids`, { params: { page: 1, pageSize: cantidad } });
       const items = res.data.items || [];
       setHistorial({ items, total: res.data.totalItems || 0 });
-      if (items.some((p) => p.compradorId === usuarioId)) setHeParticipado(true);
     } catch (err) {
       console.error('Error al cargar historial', err);
     } finally {
       setCargandoHistorial(false);
     }
-  }, [subastaId, usuarioId]);
+  }, [subastaId]);
 
   const cargarRef = useLatest(() => {
     fetchSubasta();
@@ -236,7 +235,8 @@ function Sala({ subastaId }) {
   const activa = subasta.estado === 'Activa';
   const esVendedor = subasta.vendedorId === usuarioId;
   const liderando = subasta.compradorLiderId != null && subasta.compradorLiderId === usuarioId;
-  const superado = heParticipado && subasta.compradorLiderId != null && !liderando;
+  const participo = heParticipado || subasta.heParticipado === true;
+  const superado = participo && subasta.compradorLiderId != null && !liderando;
   const montoSugerido = calcularMontoSugerido(subasta);
   const montoPuja = montoManual ?? montoSugerido;
 

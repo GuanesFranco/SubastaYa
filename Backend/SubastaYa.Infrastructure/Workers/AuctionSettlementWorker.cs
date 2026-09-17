@@ -172,7 +172,17 @@ public class AuctionSettlementWorker : BackgroundService
 
                     subasta.Finalizar(compradorId, monto);
 
-                    var log = new AuditoriaLog
+                    var logCierre = new AuditoriaLog
+                    {
+                        Entidad = EntidadesAuditoria.Subasta,
+                        EntidadId = subasta.Id,
+                        Accion = AccionesAuditoria.CierreWorker,
+                        Fecha = ahora,
+                        DetalleJson = $"{{\"estadoAnterior\":\"{EstadoSubasta.Activa}\",\"estadoNuevo\":\"{subasta.Estado}\"}}"
+                    };
+                    await logRepo.AgregarAsync(logCierre, stoppingToken);
+
+                    var logLiquidacion = new AuditoriaLog
                     {
                         Entidad = EntidadesAuditoria.Subasta,
                         EntidadId = subasta.Id,
@@ -180,7 +190,7 @@ public class AuctionSettlementWorker : BackgroundService
                         Fecha = ahora,
                         DetalleJson = $"{{\"compradorId\":{compradorId},\"monto\":{monto}}}"
                     };
-                    await logRepo.AgregarAsync(log, stoppingToken);
+                    await logRepo.AgregarAsync(logLiquidacion, stoppingToken);
 
                     await unitOfWork.SaveChangesAsync(stoppingToken);
                     _logger.LogInformation("Subasta {SubastaId} finalizada exitosamente con ganador {GanadorId}.", subasta.Id, compradorId);

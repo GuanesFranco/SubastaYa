@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common;
-using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.Interfaces.Persistence;
@@ -32,7 +31,7 @@ public class ListarPujasQueryHandler : IQueryHandler<ListarPujasQuery, Paginated
             Items = pujas.Select(p => new PujaDto(
                 p.Id,
                 p.Monto,
-                FechaArgentina.ComoUtc(p.FechaPuja),
+                p.FechaPuja,
                 p.Comprador.Nombre.Substring(0, Math.Min(2, p.Comprador.Nombre.Length)) + "***",
                 p.CompradorId
             )).ToList(),

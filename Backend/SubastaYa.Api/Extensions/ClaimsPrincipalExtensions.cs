@@ -17,5 +17,15 @@ public static class ClaimsPrincipalExtensions
 
         return usuarioId;
     }
+
+    public static int? ObtenerUsuarioIdOpcional(this ClaimsPrincipal user)
+    {
+        if (user.Identity?.IsAuthenticated != true) return null;
+
+        var claim = user.FindFirstValue(JwtRegisteredClaimNames.Sub)
+            ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        return int.TryParse(claim, out var usuarioId) ? usuarioId : null;
+    }
 }
 

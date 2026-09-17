@@ -103,7 +103,8 @@ public class SubastasController : ControllerBase
     {
         _logger.LogInformation("Consultando detalle de la subasta {SubastaId}.", id);
 
-        var result = await _obtenerSubastaHandler.Handle(new ObtenerSubastaQuery(id), cancellationToken);
+        var result = await _obtenerSubastaHandler.Handle(
+            new ObtenerSubastaQuery(id, User.ObtenerUsuarioIdOpcional()), cancellationToken);
         return Ok(result);
     }
 }

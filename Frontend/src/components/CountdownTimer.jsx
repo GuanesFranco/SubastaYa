@@ -1,13 +1,8 @@
 import React from 'react';
 import useCountdown from '../hooks/useCountdown';
 import { formatoDuracion, formatoFechaHora, plural } from '../utils/formato';
+import { ETIQUETA_ESTADO } from '../utils/subastas';
 import './CountdownTimer.css';
-
-const ETIQUETAS_INACTIVO = {
-  Programada: 'Próximamente',
-  Finalizada: 'Finalizada',
-  Desierta: 'Sin ofertas'
-};
 
 const ICONO_RELOJ = (
   <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -25,7 +20,7 @@ export default function CountdownTimer({ fechaFin, estado, tamano = 'sm', conIco
   let descripcion;
 
   if (!activo) {
-    texto = ETIQUETAS_INACTIVO[estado] || estado || '';
+    texto = ETIQUETA_ESTADO[estado] || estado || '';
     variante = 'inactivo';
     descripcion = texto;
   } else if (countdown.terminado) {

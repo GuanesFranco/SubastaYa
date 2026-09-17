@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.Interfaces.Persistence;
 using SubastaYa.Application.Interfaces.Services;
@@ -27,6 +26,9 @@ public class ObtenerSubastaQueryHandler : IQueryHandler<ObtenerSubastaQuery, Sub
             throw new KeyNotFoundException($"No se encontró la subasta con ID {query.Id}.");
         }
 
+        var heParticipado = query.UsuarioId.HasValue
+            && await _subastaRepository.ExisteMiPujaAsync(query.Id, query.UsuarioId.Value, cancellationToken);
+
         return new SubastaDetalleDto(
             subasta.Id,
             subasta.Titulo,
@@ -35,14 +37,15 @@ public class ObtenerSubastaQueryHandler : IQueryHandler<ObtenerSubastaQuery, Sub
             subasta.PrecioBase,
             subasta.PrecioActual,
             subasta.IncrementoMinimo,
-            FechaArgentina.ComoUtc(subasta.FechaInicio),
-            FechaArgentina.ComoUtc(subasta.FechaFin),
+            subasta.FechaInicio,
+            subasta.FechaFin,
             subasta.Estado,
             subasta.Categoria.Nombre,
             subasta.VendedorId,
             subasta.Vendedor.Nombre,
             subasta.PujaLiderId,
-            subasta.PujaLider?.CompradorId
+            subasta.PujaLider?.CompradorId,
+            heParticipado
         );
     }
 }

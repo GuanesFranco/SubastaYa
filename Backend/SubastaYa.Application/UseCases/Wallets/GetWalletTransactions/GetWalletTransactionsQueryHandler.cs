@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common;
-using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.DTOs.Wallet;
 using SubastaYa.Application.Interfaces.Persistence;
@@ -31,7 +30,7 @@ public class GetWalletTransactionsQueryHandler : IQueryHandler<GetWalletTransact
         return new PaginatedResult<MovimientoDto>
         {
             Items = movimientos
-                .Select(m => new MovimientoDto(m.Id, m.Tipo, m.Monto, FechaArgentina.ComoUtc(m.Fecha), m.Descripcion, m.SubastaId))
+                .Select(m => new MovimientoDto(m.Id, m.Tipo, m.Monto, m.Fecha, m.Descripcion, m.SubastaId))
                 .ToList(),
             TotalItems = total,
             Page = page,
