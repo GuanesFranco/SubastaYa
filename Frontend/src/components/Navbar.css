@@ -182,9 +182,10 @@
   transition: var(--transition);
 }
 
-.navbar__salir:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
+.navbar__salir:hover,
+.navbar__salir:active {
+  color: var(--danger-text);
+  background: var(--danger-bg);
 }
 
 .navbar__salir:focus-visible {

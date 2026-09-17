@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useSaldo from '../hooks/useSaldo';
+import Confirmacion from './Confirmacion';
 import { formatoARS } from '../utils/formato';
 import './Navbar.css';
 
@@ -19,10 +20,12 @@ export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
   const saldo = useSaldo();
   const navigate = useNavigate();
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false);
 
   const disponible = saldo.datos ? saldo.datos.saldoDisponible : null;
 
   const handleLogout = () => {
+    setConfirmandoSalida(false);
     logout();
     navigate('/login');
   };
@@ -73,11 +76,27 @@ export default function Navbar() {
           </Link>
           <span className="navbar__avatar" aria-hidden="true">{inicial}</span>
           <span className="navbar__nombre">{user.nombre}</span>
-          <button type="button" className="navbar__salir" onClick={handleLogout}>
+          <button
+            type="button"
+            className="navbar__salir"
+            onClick={() => setConfirmandoSalida(true)}
+            aria-haspopup="dialog"
+          >
             Salir
           </button>
         </div>
       )}
+
+      <Confirmacion
+        abierto={confirmandoSalida}
+        titulo="¿Cerrás tu sesión?"
+        mensaje="Vas a volver a la pantalla de ingreso. Tus ofertas y tu saldo quedan como están."
+        textoConfirmar="Sí, salir"
+        textoCancelar="Seguir acá"
+        peligro
+        onConfirmar={handleLogout}
+        onCancelar={() => setConfirmandoSalida(false)}
+      />
     </header>
   );
 }

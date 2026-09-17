@@ -1,0 +1,60 @@
+.confirmacion {
+  margin: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  width: min(26rem, calc(100vw - 2rem));
+}
+
+.confirmacion::backdrop {
+  background: rgba(5, 8, 16, 0.72);
+}
+
+.confirmacion__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background: var(--surface-raised);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.confirmacion[open] .confirmacion__panel {
+  animation: fadeIn var(--duration-normal) var(--ease-out) both;
+}
+
+.confirmacion__titulo {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.confirmacion__mensaje {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.confirmacion__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 480px) {
+  .confirmacion__acciones {
+    flex-direction: column;
+  }
+
+  .confirmacion__acciones .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirmacion[open] .confirmacion__panel {
+    animation: none;
+  }
+}
