@@ -6,9 +6,9 @@
   display: block;
   background: linear-gradient(
     90deg,
-    rgba(148, 163, 184, 0.1) 0%,
-    rgba(148, 163, 184, 0.22) 50%,
-    rgba(148, 163, 184, 0.1) 100%
+    var(--skeleton-base) 0%,
+    var(--skeleton-brillo) 50%,
+    var(--skeleton-base) 100%
   );
   background-size: 200% 100%;
   border-radius: var(--radius-sm);
@@ -125,6 +125,6 @@
 @media (prefers-reduced-motion: reduce) {
   .skeleton__bloque {
     animation: none;
-    background: rgba(148, 163, 184, 0.16);
+    background: var(--skeleton-brillo);
   }
 }

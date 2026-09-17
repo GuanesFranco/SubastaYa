@@ -62,7 +62,7 @@
 
 .navbar__link:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--hover-bg);
 }
 
 .navbar__link--activo {
@@ -96,13 +96,53 @@
   margin-left: auto;
 }
 
+.navbar__tema {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.navbar__tema:hover {
+  color: var(--text-main);
+  border-color: var(--glass-border-strong);
+  background: var(--hover-bg);
+}
+
+.navbar__tema:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.navbar__tema-icono {
+  display: grid;
+  animation: navbar-tema-entrar var(--duration-normal) var(--ease-out) both;
+}
+
+.navbar__tema-icono svg {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes navbar-tema-entrar {
+  from { transform: rotate(-45deg) scale(0.6); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
 .navbar__usuario {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   padding-left: var(--space-4);
   border-left: 1px solid var(--glass-border);
-  margin-left: auto;
   flex-shrink: 0;
 }
 
@@ -235,10 +275,25 @@
   .navbar__saldo-icono {
     display: none;
   }
+
+  .navbar {
+    gap: var(--space-2);
+  }
+
+  .navbar__usuario {
+    gap: var(--space-2);
+  }
+}
+
+@media (max-width: 360px) {
+  .navbar__avatar {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .navbar__saldo-monto {
+  .navbar__saldo-monto,
+  .navbar__tema-icono {
     animation: none;
   }
 }

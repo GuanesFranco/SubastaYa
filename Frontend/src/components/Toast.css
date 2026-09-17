@@ -28,7 +28,6 @@
   line-height: 1.4;
   pointer-events: auto;
   animation: toast-entrar var(--duration-slow) var(--ease-out) both;
-  --toast-bg: rgba(30, 41, 59, 0.92);
   --toast-border: var(--glass-border-strong);
   --toast-acento: var(--accent-primary);
 }
@@ -91,7 +90,7 @@
 
 .toast__cerrar:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-bg);
 }
 
 .toast__cerrar:focus-visible {

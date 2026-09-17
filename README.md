@@ -201,3 +201,6 @@ porque el CORS del backend está atado a ese origen.
 
 `npm run lint` corre `oxlint` y tiene que quedar en cero. `npm run build` genera la versión de
 producción en `dist/`.
+
+La interfaz arranca en modo oscuro. El botón con el sol o la luna en la barra superior pasa a modo
+claro y vuelve; la elección se guarda en el navegador y se respeta en las próximas visitas.

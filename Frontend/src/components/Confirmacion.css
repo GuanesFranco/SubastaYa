@@ -8,7 +8,7 @@
 }
 
 .confirmacion::backdrop {
-  background: rgba(5, 8, 16, 0.72);
+  background: var(--overlay, rgba(5, 8, 16, 0.72));
 }
 
 .confirmacion__panel {
