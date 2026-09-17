@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useSaldo from '../hooks/useSaldo';
+import useTema from '../hooks/useTema';
 import Confirmacion from './Confirmacion';
 import { formatoARS } from '../utils/formato';
 import './Navbar.css';
@@ -16,9 +17,35 @@ const ICONO_BILLETERA = (
   </svg>
 );
 
+const ICONO_SOL = (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    <path
+      d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const ICONO_LUNA = (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
   const saldo = useSaldo();
+  const { tema, esOscuro, alternar } = useTema();
   const navigate = useNavigate();
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
 
@@ -59,6 +86,18 @@ export default function Navbar() {
           </div>
         )}
       </nav>
+
+      <button
+        type="button"
+        className="navbar__tema"
+        onClick={alternar}
+        aria-label={esOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        title={esOscuro ? 'Modo claro' : 'Modo oscuro'}
+      >
+        <span key={tema} className="navbar__tema-icono">
+          {esOscuro ? ICONO_SOL : ICONO_LUNA}
+        </span>
+      </button>
 
       {isAuthenticated && (
         <div className="navbar__usuario">

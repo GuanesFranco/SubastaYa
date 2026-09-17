@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import TemaProvider from './context/TemaProvider';
 import AuthProvider from './context/AuthProvider';
 import SaldoProvider from './context/SaldoProvider';
 import useAuth from './hooks/useAuth';
@@ -68,14 +69,16 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <SaldoProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
-        </SaldoProvider>
-      </ToastProvider>
-    </AuthProvider>
+    <TemaProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <SaldoProvider>
+            <Router>
+              <AppRoutes />
+            </Router>
+          </SaldoProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </TemaProvider>
   );
 }

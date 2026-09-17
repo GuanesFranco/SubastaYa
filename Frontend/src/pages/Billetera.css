@@ -170,7 +170,7 @@
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hover-bg);
   border-bottom: 1px solid var(--glass-border);
 }
 
