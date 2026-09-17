@@ -1,15 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import useSaldo from '../hooks/useSaldo';
+import Confirmacion from './Confirmacion';
+import { formatoARS } from '../utils/formato';
 import './Navbar.css';
 
 const claseLink = ({ isActive }) => `navbar__link${isActive ? ' navbar__link--activo' : ''}`;
 
+const ICONO_BILLETERA = (
+  <svg className="navbar__saldo-icono" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 7.5A1.5 1.5 0 0 1 5.5 6H17" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    <rect x="4" y="7.5" width="16" height="10.5" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7" />
+    <circle cx="16.25" cy="12.75" r="1.25" fill="currentColor" />
+  </svg>
+);
+
 export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
+  const saldo = useSaldo();
   const navigate = useNavigate();
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false);
+
+  const disponible = saldo.datos ? saldo.datos.saldoDisponible : null;
 
   const handleLogout = () => {
+    setConfirmandoSalida(false);
     logout();
     navigate('/login');
   };
@@ -46,13 +62,41 @@ export default function Navbar() {
 
       {isAuthenticated && (
         <div className="navbar__usuario">
+          <Link
+            to="/billetera"
+            className="navbar__saldo"
+            aria-label={disponible == null
+              ? 'Ir a mi billetera'
+              : `Disponible para ofertar: ${formatoARS(disponible)}. Ir a mi billetera`}
+          >
+            {ICONO_BILLETERA}
+            <span key={disponible} className="navbar__saldo-monto">
+              {disponible == null ? '—' : formatoARS(disponible)}
+            </span>
+          </Link>
           <span className="navbar__avatar" aria-hidden="true">{inicial}</span>
           <span className="navbar__nombre">{user.nombre}</span>
-          <button type="button" className="navbar__salir" onClick={handleLogout}>
+          <button
+            type="button"
+            className="navbar__salir"
+            onClick={() => setConfirmandoSalida(true)}
+            aria-haspopup="dialog"
+          >
             Salir
           </button>
         </div>
       )}
+
+      <Confirmacion
+        abierto={confirmandoSalida}
+        titulo="¿Cerrás tu sesión?"
+        mensaje="Vas a volver a la pantalla de ingreso. Tus ofertas y tu saldo quedan como están."
+        textoConfirmar="Sí, salir"
+        textoCancelar="Seguir acá"
+        peligro
+        onConfirmar={handleLogout}
+        onCancelar={() => setConfirmandoSalida(false)}
+      />
     </header>
   );
 }

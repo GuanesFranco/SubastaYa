@@ -7,7 +7,7 @@ import useToast from '../hooks/useToast';
 import useCountdown from '../hooks/useCountdown';
 import useLatest from '../hooks/useLatest';
 import useAuctionHub from '../hooks/useAuctionHub';
-import useRecurso from '../hooks/useRecurso';
+import useSaldo from '../hooks/useSaldo';
 import Skeleton from '../components/Skeleton';
 import EstadoError from '../components/EstadoError';
 import EstadoVacio from '../components/EstadoVacio';
@@ -56,10 +56,7 @@ function Sala({ subastaId }) {
   const extensionPropiaRef = useRef(null);
   const exitoTimerRef = useRef(null);
 
-  const saldo = useRecurso(
-    (signal) => (user ? api.get('/wallets/me', { signal }).then((res) => res.data) : Promise.resolve(null)),
-    [subastaId, usuarioId]
-  );
+  const saldo = useSaldo();
 
   useEffect(() => () => clearTimeout(exitoTimerRef.current), []);
 

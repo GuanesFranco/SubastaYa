@@ -5,6 +5,7 @@ import Skeleton from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 import EstadoError from '../components/EstadoError';
 import useRecurso from '../hooks/useRecurso';
+import useSaldo from '../hooks/useSaldo';
 import useToast from '../hooks/useToast';
 import useTitulo from '../hooks/useTitulo';
 import { formatoARS, formatoFechaHora } from '../utils/formato';
@@ -34,10 +35,7 @@ export default function Billetera() {
   const [montoDeposito, setMontoDeposito] = useState('');
   const [depositando, setDepositando] = useState(false);
 
-  const balance = useRecurso(
-    (signal) => api.get('/wallets/me', { signal }).then((res) => res.data),
-    []
-  );
+  const balance = useSaldo();
 
   const movimientos = useRecurso(async (signal) => {
     const res = await api.get('/wallets/me/transactions', { params: { page, pageSize: PAGE_SIZE }, signal });
