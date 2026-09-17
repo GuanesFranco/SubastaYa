@@ -12,7 +12,6 @@ import { formatoARS, plural } from '../utils/formato';
 import './MisActividades.css';
 
 const PAGE_SIZE = 12;
-const TOPE_METRICAS = 100;
 
 const TABS = [
   { id: 'pujas', recurso: '/users/me/bids', label: 'Donde participé' },
@@ -51,17 +50,14 @@ export default function MisActividades() {
   }, [activeTab, pageActual], { grupo: activeTab });
 
   const metricas = useRecurso(async (signal) => {
-    const res = await api.get('/users/me/auctions', { params: { page: 1, pageSize: TOPE_METRICAS }, signal });
-    const items = res.data.items || [];
-    const total = res.data.totalItems ?? items.length;
-    const vendidas = items.filter((s) => s.estado === 'Finalizada' && s.montoFinal != null);
+    const res = await api.get('/users/me/auctions', { params: { page: 1, pageSize: 1 }, signal });
+    const m = res.data.metricas || {};
 
     return {
-      totalPublicadas: total,
-      vendidas: vendidas.length,
-      recaudado: vendidas.reduce((acc, s) => acc + Number(s.montoFinal), 0),
-      enCurso: items.filter((s) => s.estado === 'Activa' || s.estado === 'Programada').length,
-      parcial: total > items.length
+      totalPublicadas: m.totalPublicadas ?? 0,
+      vendidas: m.vendidas ?? 0,
+      recaudado: Number(m.recaudacionTotal ?? 0),
+      enCurso: m.enCurso ?? 0
     };
   }, []);
 
@@ -109,9 +105,6 @@ export default function MisActividades() {
           <span className="metrica__etiqueta">Publicadas</span>
           <strong className="metrica__valor">{m.totalPublicadas}</strong>
         </div>
-        {m.parcial && (
-          <p className="metricas__aviso">La recaudación se calcula sobre tus primeras {TOPE_METRICAS} publicaciones.</p>
-        )}
       </div>
     );
   };

@@ -47,7 +47,7 @@ public class RegistrarUsuarioCommandHandler : ICommandHandler<RegistrarUsuarioCo
             FechaRegistro = FechaArgentina.AhoraUtc
         };
 
-        var billetera = new Billetera(0); // EF Core asignará UsuarioId luego de guardar o usando nav properties.
+        var billetera = new Billetera(0);
         usuario.Billetera = billetera;
 
         await _usuarioRepository.AgregarAsync(usuario, cancellationToken);

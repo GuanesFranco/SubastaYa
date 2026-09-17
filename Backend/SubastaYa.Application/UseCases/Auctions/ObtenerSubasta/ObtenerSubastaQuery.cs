@@ -1,3 +1,3 @@
 namespace SubastaYa.Application.UseCases.Auctions.ObtenerSubasta;
 
-public record ObtenerSubastaQuery(int Id);
+public record ObtenerSubastaQuery(int Id, int? UsuarioId = null);

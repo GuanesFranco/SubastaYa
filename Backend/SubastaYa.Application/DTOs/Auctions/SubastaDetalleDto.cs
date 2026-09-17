@@ -17,5 +17,6 @@ public record SubastaDetalleDto(
     int VendedorId,
     string VendedorNombre,
     int? PujaLiderId,
-    int? CompradorLiderId
+    int? CompradorLiderId,
+    bool HeParticipado
 );

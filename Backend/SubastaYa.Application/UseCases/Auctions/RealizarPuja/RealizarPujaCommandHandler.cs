@@ -128,7 +128,7 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
                 EntidadId = subasta.Id,
                 Accion = AccionesAuditoria.ExtensionTiempo,
                 UsuarioId = command.CompradorId,
-                DetalleJson = $"{{\"nuevaFechaFin\":\"{FechaArgentina.ComoUtc(subasta.FechaFin):o}\"}}",
+                DetalleJson = $"{{\"nuevaFechaFin\":\"{subasta.FechaFin:o}\"}}",
                 Fecha = ahora
             }, cancellationToken);
         }
@@ -143,13 +143,13 @@ public class RealizarPujaCommandHandler : ICommandHandler<RealizarPujaCommand, P
             throw;
         }
 
-        var fechaFinUtc = FechaArgentina.ComoUtc(subasta.FechaFin);
+        var fechaFinUtc = subasta.FechaFin;
 
         await _notificador.PujaRealizadaAsync(new PujaRealizadaDto(
             subasta.Id,
             puja.Id,
             puja.Monto,
-            FechaArgentina.ComoUtc(puja.FechaPuja),
+            puja.FechaPuja,
             fechaFinUtc,
             command.CompradorId));
 

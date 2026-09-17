@@ -2,22 +2,9 @@ import React, { useState } from 'react';
 import CountdownTimer from '../CountdownTimer';
 import IndicadorConexion from './IndicadorConexion';
 import { formatoARS, formatoDuracion, formatoFechaHora } from '../../utils/formato';
-
-const ETIQUETA_ESTADO = {
-  Activa: 'En vivo',
-  Programada: 'Próximamente',
-  Finalizada: 'Finalizada',
-  Desierta: 'Desierta'
-};
+import { ETIQUETA_ESTADO, ETIQUETA_PRECIO } from '../../utils/subastas';
 
 const DESCRIPCION_CORTA = 300;
-
-const ETIQUETA_PRECIO = {
-  Activa: 'Precio actual',
-  Programada: 'Precio inicial',
-  Finalizada: 'Precio final',
-  Desierta: 'Precio base'
-};
 
 export default function EncabezadoSubasta({ subasta, ultimoMinuto, estadoConexion, onReconectar, extension, onExtensionFin }) {
   const [imagenRota, setImagenRota] = useState(false);

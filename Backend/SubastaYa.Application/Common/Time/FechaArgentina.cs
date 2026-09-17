@@ -16,13 +16,4 @@ public static class FechaArgentina
         };
     }
 
-    public static DateTime ComoUtc(DateTime fecha)
-    {
-        return fecha.Kind switch
-        {
-            DateTimeKind.Utc => fecha,
-            DateTimeKind.Local => fecha.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(fecha, DateTimeKind.Utc)
-        };
-    }
 }

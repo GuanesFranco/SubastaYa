@@ -59,6 +59,12 @@ export function aDatetimeLocal(fecha) {
   return `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}T${dos(fecha.getHours())}:${dos(fecha.getMinutes())}`;
 }
 
+export function aUtcIso(valorDatetimeLocal) {
+  if (!valorDatetimeLocal) return valorDatetimeLocal;
+  const fecha = new Date(valorDatetimeLocal);
+  return Number.isNaN(fecha.getTime()) ? valorDatetimeLocal : fecha.toISOString();
+}
+
 export function formatoDuracion(ms) {
   const { total, horas, minutos, segundos } = descomponerDuracion(ms);
   const dos = (n) => String(n).padStart(2, '0');

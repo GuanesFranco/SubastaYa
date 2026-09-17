@@ -46,7 +46,7 @@ public class UsuariosController : ControllerBase
 
     [HttpGet("me/auctions")]
     [Authorize]
-    [ProducesResponseType(typeof(PaginatedResult<SubastaResumenDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(MisSubastasResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMisSubastas([FromQuery] PaginacionDto paginacion, CancellationToken cancellationToken)
     {

@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using SubastaYa.Application.Common;
-using SubastaYa.Application.Common.Time;
 using SubastaYa.Application.DTOs.Auctions;
 using SubastaYa.Application.DTOs.Common;
 using SubastaYa.Application.Interfaces.Persistence;
@@ -32,11 +31,7 @@ public class ListarSubastasQueryHandler : IQueryHandler<ListarSubastasQuery, Pag
 
         return new PaginatedResult<SubastaResumenDto>
         {
-            Items = items.Select(d => d with
-            {
-                FechaFin = FechaArgentina.ComoUtc(d.FechaFin),
-                FechaUltimaPuja = d.FechaUltimaPuja.HasValue ? FechaArgentina.ComoUtc(d.FechaUltimaPuja.Value) : null
-            }).ToList(),
+            Items = items.ToList(),
             TotalItems = total,
             Page = page,
             PageSize = pageSize

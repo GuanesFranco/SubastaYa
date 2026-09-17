@@ -3,21 +3,8 @@ import { Link } from 'react-router-dom';
 import CountdownTimer from './CountdownTimer';
 import { useAhora } from '../hooks/useCountdown';
 import { formatoARS, formatoRelativo, plural } from '../utils/formato';
+import { ETIQUETA_ESTADO, ETIQUETA_PRECIO } from '../utils/subastas';
 import './AuctionCard.css';
-
-const ETIQUETA_ESTADO = {
-  Activa: 'En vivo',
-  Programada: 'Próximamente',
-  Finalizada: 'Finalizada',
-  Desierta: 'Sin ofertas'
-};
-
-const ETIQUETA_PRECIO = {
-  Activa: 'Precio actual',
-  Programada: 'Precio inicial',
-  Finalizada: 'Precio final',
-  Desierta: 'Precio base'
-};
 
 export default function AuctionCard({ auction }) {
   const [imagenRota, setImagenRota] = useState(false);

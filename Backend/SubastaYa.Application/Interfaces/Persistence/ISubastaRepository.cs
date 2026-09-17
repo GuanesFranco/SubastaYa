@@ -23,6 +23,12 @@ public interface ISubastaRepository
     Task<(IEnumerable<SubastaResumenDto> Items, int Total)> ObtenerSubastasPorVendedorAsync(
         int vendedorId, int page, int pageSize, CancellationToken cancellationToken = default);
 
+    Task<MetricasVendedorDto> ObtenerMetricasVendedorAsync(
+        int vendedorId, CancellationToken cancellationToken = default);
+
+    Task<bool> ExisteMiPujaAsync(
+        int subastaId, int compradorId, CancellationToken cancellationToken = default);
+
     Task<Subasta?> ObtenerParaPujarAsync(int id, CancellationToken cancellationToken = default);
 
     Task AgregarPujaAsync(Puja puja, CancellationToken cancellationToken = default);
