@@ -22,7 +22,7 @@ SignalR · JWT + BCrypt · Swagger.
 - **Conexión a internet** mientras se usa la app. Las fotos de las subastas del seed y de la
   galería de "Publicar" se sirven desde `cdn.dummyjson.com`; sin red, las cards muestran la
   inicial de la categoría en lugar de la foto. Todo lo demás corre local.
-- En Windows, **Git Bash** para correr el script de concurrencia (`scripts/*.sh`).
+- En Windows, **Git Bash** para correr las pruebas automatizadas (`scripts/*.sh`).
 
 ## Cómo levantarlo
 
@@ -84,7 +84,7 @@ importar cuándo se clone el repositorio.
 
 Para volver al estado inicial (por ejemplo, antes de una demo) alcanza con borrar la base y
 arrancar la API de nuevo: `DROP DATABASE SubastaYaDB` desde SSMS, y el próximo `dotnet run`
-la recrea y la vuelve a sembrar.
+la recrea y la vuelve a sembrar. El script `scripts/reset-db.sh` hace lo mismo sin abrir SSMS.
 
 ### Recorrido sugerido
 
@@ -102,45 +102,67 @@ la recrea y la vuelve a sembrar.
 6. **Cierre**: cuando vence una subasta con ofertas, el worker la liquida y la sala muestra el
    resultado; el ganador ve el débito y el vendedor el crédito en su billetera.
 
-## Tests Automatizados (QA Suite)
+## Pruebas automatizadas
 
-La carpeta `/scripts` contiene una suite de 8 pruebas automatizadas de integración e infraestructura escritas en Bash.
+En `scripts/` hay siete pruebas de integración escritas en bash, más un runner que las corre
+todas y un script para resetear la base. Todas le pegan a la API real por HTTP, así que
+necesitan el backend levantado. Aceptan la URL base como primer argumento, por si la API no
+está en el puerto de siempre.
 
-> [!WARNING]
-> **NO EJECUTAR LA SUITE DE PRUEBAS ANTES DE UNA DEMO.**
-> La suite no es idempotente: siembra decenas de subastas falsas en el catálogo (algunas activas hasta el 2030) y retiene fondos de las billeteras de los usuarios de prueba. Varias corridas sin reiniciar la base de datos terminarán agotando el saldo de los compradores.
+**No conviene correr la suite justo antes de una demo.** No es idempotente: siembra decenas de
+subastas de prueba en el catálogo, con cierre a diez días, y deja fondos retenidos en las
+billeteras de los usuarios semilla. Varias corridas seguidas sin resetear terminan agotando el
+saldo disponible de los compradores.
 
-Para ejecutar toda la suite de pruebas de forma automática y recopilar los resultados:
+El orden es siempre el mismo, y los tres comandos se corren desde la raíz del repositorio:
 
 ```bash
-./scripts/correr-todas.sh
+./scripts/reset-db.sh                                             # con la API apagada
+dotnet run --project Backend/SubastaYa.Api --launch-profile http  # recrea y siembra la base
+./scripts/correr-todas.sh                                         # en otra terminal
 ```
 
-### Scripts Individuales
+El runner ejecuta las siete pruebas en orden, imprime un resumen al final y devuelve error si
+alguna falló.
 
-1. **`prueba-concurrencia.sh`**: Dispara decenas de pujas al mismo milisegundo exigiendo al menos un rechazo de código `409` para demostrar el bloqueo optimista de la base de datos.
-2. **`prueba-volumen.sh`**: Smoke test que lanza cientos de peticiones HTTP concurrentes validando que el servidor Kestrel no rechace conexiones.
-3. **`prueba-reglas-negocio.sh`**: Valida por API los códigos de error exactos de dominio (422, 400, 401) por auto-puja, montos inválidos y falta de saldo.
-4. **`prueba-worker.sh`**: Crea una subasta rápida y hace polling esperando que el *BackgroundService* asíncrono detecte el vencimiento y la marque como `Desierta`.
-5. **`prueba-antisniping.sh`**: Simula una puja en los últimos 45 segundos y verifica con la API que la extensión automática agregue exactamente 120 segundos al cierre.
-6. **`prueba-ledger.sh`**: Demuestra la precisión transaccional de las billeteras restando y validando decimales tras varias pujas concurrentes.
-7. **`prueba-paginacion.sh`**: Inyecta subastas y solicita offsets para demostrar el funcionamiento del motor de SQL Server.
+### Qué demuestra cada una
 
-### Limpieza de Datos (Reset)
+- **`prueba-concurrencia.sh`** dispara quince pujas idénticas en paralelo sobre la misma
+  subasta y exige que entre exactamente una (`201`) y que al menos una rebote por conflicto de
+  versión (`409`). Reintenta hasta tres rondas, con una subasta nueva cada vez, porque el
+  choque depende de qué tan rápido responda la máquina.
+- **`prueba-volumen.sh`** es un smoke test: veinte peticiones al catálogo, cantidad
+  parametrizable, y todas tienen que responder `200`. No mide memoria ni latencia.
+- **`prueba-reglas-negocio.sh`** verifica los cuatro rechazos del dominio con su código exacto:
+  sin token (`401`), monto por debajo del incremento mínimo (`422`), vendedor pujando en su
+  propia subasta (`400`) y saldo insuficiente (`422`).
+- **`prueba-worker.sh`** crea una subasta que vence en cinco segundos, no puja nadie y consulta
+  el estado cada dos segundos hasta treinta, esperando que el worker la marque `Desierta`. El
+  margen cubre el ciclo de diez segundos del `BackgroundService`.
+- **`prueba-antisniping.sh`** puja dentro del último minuto y compara la fecha de cierre que
+  devuelve la API antes y después: la diferencia tiene que ser de ciento veinte segundos
+  exactos.
+- **`prueba-ledger.sh`** hace tres pujas cruzadas entre dos compradores. Verifica que las tres
+  entren y después que el líder tenga exactamente el monto retenido de menos y el superado haya
+  recuperado todo, comparando los decimales con `awk`.
+- **`prueba-paginacion.sh`** siembra treinta subastas y pide las páginas uno y dos con
+  `pageSize=10`, más una búsqueda por título.
 
-Si la suite dejó tu base de datos inutilizable para una demostración, utiliza el script de reseteo:
+### Resetear la base
+
+`reset-db.sh` borra `SubastaYaDB` con `sqlcmd`, que viene con las herramientas de SQL Server,
+para que el próximo `dotnet run` la recree y la vuelva a sembrar desde cero. Se niega a correr
+si la API está levantada, porque la dejaría apuntando a una base que ya no existe.
 
 ```bash
 ./scripts/reset-db.sh
 ```
-*Asegúrate de apagar la API antes de correrlo. El próximo `dotnet run` recreará y sembrará la base de cero.*
 
 ---
 
 ## Notas para consumir la API
 
-Los endpoints y sus códigos de respuesta están documentados en Swagger. Tres cosas que no se
-ven ahí:
+Los endpoints y sus códigos de respuesta están documentados en Swagger. Lo que no se ve ahí:
 
 - **Los errores vienen en `ProblemDetails`** (RFC 7807), con `Content-Type:
   application/problem+json`.
