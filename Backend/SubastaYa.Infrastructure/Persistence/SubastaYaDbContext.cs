@@ -1,0 +1,147 @@
+using Microsoft.EntityFrameworkCore;
+using SubastaYa.Domain.Entities;
+using SubastaYa.Domain.Enums;
+
+namespace SubastaYa.Infrastructure.Persistence;
+
+public class SubastaYaDbContext : DbContext
+{
+    public SubastaYaDbContext(DbContextOptions<SubastaYaDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<Billetera> Billeteras => Set<Billetera>();
+    public DbSet<Categoria> Categorias => Set<Categoria>();
+    public DbSet<Subasta> Subastas => Set<Subasta>();
+    public DbSet<Puja> Pujas => Set<Puja>();
+    public DbSet<TransaccionLedger> TransaccionesLedger => Set<TransaccionLedger>();
+    public DbSet<AuditoriaLog> AuditoriaLogs => Set<AuditoriaLog>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Usuario>(entity =>
+        {
+            entity.Property(u => u.Email).IsRequired().HasMaxLength(256);
+            entity.HasIndex(u => u.Email).IsUnique();
+
+            entity.HasOne(u => u.Billetera)
+                .WithOne(b => b.Usuario)
+                .HasForeignKey<Billetera>(b => b.UsuarioId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Billetera>(entity =>
+        {
+            entity.Property(b => b.Version).IsConcurrencyToken();
+            entity.Property(b => b.SaldoTotal).HasPrecision(18, 2);
+            entity.Property(b => b.SaldoRetenido).HasPrecision(18, 2);
+
+            entity.HasMany(b => b.Movimientos)
+                .WithOne(t => t.Billetera)
+                .HasForeignKey(t => t.BilleteraId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Subasta>(entity =>
+        {
+            entity.Property(s => s.Estado).HasConversion<string>();
+
+            entity.Property(s => s.Version).IsConcurrencyToken();
+            entity.Property(s => s.PrecioBase).HasPrecision(18, 2);
+            entity.Property(s => s.IncrementoMinimo).HasPrecision(18, 2);
+            entity.Property(s => s.PrecioActual).HasPrecision(18, 2);
+            entity.Property(s => s.MontoFinal).HasPrecision(18, 2);
+
+            entity.HasOne(s => s.Vendedor)
+                .WithMany(u => u.SubastasPublicadas)
+                .HasForeignKey(s => s.VendedorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(s => s.GanadorUsuario)
+                .WithMany()
+                .HasForeignKey(s => s.GanadorUsuarioId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(s => s.Categoria)
+                .WithMany(c => c.Subastas)
+                .HasForeignKey(s => s.CategoriaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(s => s.PujaLider)
+                .WithMany()
+                .HasForeignKey(s => s.PujaLiderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(s => s.Pujas)
+                .WithOne(p => p.Subasta)
+                .HasForeignKey(p => p.SubastaId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Puja>(entity =>
+        {
+            entity.Property(p => p.Monto).HasPrecision(18, 2);
+
+            entity.HasOne(p => p.Comprador)
+                .WithMany(u => u.Pujas)
+                .HasForeignKey(p => p.CompradorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TransaccionLedger>(entity =>
+        {
+            entity.Property(t => t.Tipo).HasConversion<string>();
+            entity.Property(t => t.Monto).HasPrecision(18, 2);
+
+            entity.HasOne(t => t.Subasta)
+                .WithMany()
+                .HasForeignKey(t => t.SubastaId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AuditoriaLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            
+            entity.Property(e => e.Entidad)
+                  .HasConversion<string>();
+                  
+            entity.Property(e => e.Accion)
+                  .HasConversion<string>();
+
+            entity.Property(a => a.DetalleJson).HasColumnType("nvarchar(max)");
+
+            entity.HasOne(e => e.Usuario)
+                  .WithMany()
+                  .HasForeignKey(e => e.UsuarioId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Categoria>().HasData(
+            new Categoria { Id = 1, Nombre = "Tecnología", UrlIcono = "https://example.com/icon-tech.png" },
+            new Categoria { Id = 2, Nombre = "Vehículos", UrlIcono = "https://example.com/icon-car.png" },
+            new Categoria { Id = 3, Nombre = "Coleccionables", UrlIcono = "https://example.com/icon-collect.png" },
+            new Categoria { Id = 4, Nombre = "Indumentaria", UrlIcono = "https://example.com/icon-clothes.png" }
+        );
+
+        var dateTimeConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime, DateTime>(
+            v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+        var nullableDateTimeConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime?, DateTime?>(
+            v => v, v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
+                {
+                    property.SetValueConverter(
+                        property.ClrType == typeof(DateTime) ? dateTimeConverter : nullableDateTimeConverter);
+                }
+            }
+        }
+    }
+}

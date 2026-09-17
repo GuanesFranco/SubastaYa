@@ -1,0 +1,79 @@
+.countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-main);
+  transition: color var(--duration-normal) ease;
+}
+
+.countdown svg {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+.countdown--sm {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.countdown--lg {
+  font-size: var(--text-display);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  gap: var(--space-2);
+}
+
+.countdown--lg svg {
+  width: 0.7em;
+  height: 0.7em;
+}
+
+.countdown--inactivo,
+.countdown--lejano {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.countdown--lejano {
+  white-space: normal;
+}
+
+.countdown--lg.countdown--lejano,
+.countdown--lg.countdown--inactivo {
+  font-size: var(--text-2xl);
+  letter-spacing: 0;
+}
+
+.countdown--cerrando {
+  color: var(--warning-text);
+}
+
+.countdown--proximo {
+  color: var(--warning-text);
+}
+
+.countdown--critico {
+  color: var(--danger-text);
+  animation: countdown-latido 1.6s ease-in-out infinite;
+}
+
+.countdown--urgente {
+  color: var(--danger-text);
+  animation: countdown-latido 1s ease-in-out infinite;
+}
+
+@keyframes countdown-latido {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countdown--urgente,
+  .countdown--critico {
+    animation: none;
+  }
+}

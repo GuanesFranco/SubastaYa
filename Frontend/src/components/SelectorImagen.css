@@ -1,0 +1,100 @@
+.selector-imagen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.selector-imagen__grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--space-3);
+}
+
+.selector-imagen__opcion {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--bg-dark);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+}
+
+.selector-imagen__opcion:hover {
+  border-color: var(--glass-border-strong);
+  background: var(--surface-raised);
+  color: var(--text-main);
+}
+
+.selector-imagen__opcion:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.selector-imagen__opcion--elegida,
+.selector-imagen__opcion--elegida:hover {
+  border-color: var(--accent-primary);
+  background: var(--accent-bg);
+  color: var(--text-main);
+}
+
+.selector-imagen__opcion img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.selector-imagen__titulo {
+  font-size: var(--text-xs);
+  line-height: var(--leading-tight);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.selector-imagen__check {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: var(--accent-primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.selector-imagen__check svg {
+  width: 14px;
+  height: 14px;
+}
+
+.selector-imagen__toggle {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.selector-imagen__toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+

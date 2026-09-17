@@ -1,0 +1,130 @@
+.actividades__titulo {
+  margin-bottom: var(--space-5);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: var(--space-6);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs__boton {
+  position: relative;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: var(--text-base);
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+.tabs__boton::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  right: 50%;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent-primary);
+  border-radius: var(--radius-full);
+  transition: left var(--duration-normal) var(--ease-out), right var(--duration-normal) var(--ease-out);
+}
+
+.tabs__boton:hover {
+  color: var(--text-main);
+  background: var(--hover-bg);
+}
+
+.tabs__boton--activo {
+  color: var(--text-main);
+}
+
+.tabs__boton--activo::after {
+  left: var(--space-2);
+  right: var(--space-2);
+}
+
+.tabs__boton:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.actividades__panel {
+  animation: fadeIn var(--duration-normal) ease-out both;
+}
+
+.metricas {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.metrica {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-5);
+}
+
+.metrica--principal {
+  border-top: 1px solid var(--success-border);
+}
+
+.metrica__etiqueta {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.metrica__valor {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.metrica--principal .metrica__valor {
+  font-size: var(--text-display);
+  color: var(--success-text);
+  letter-spacing: -0.02em;
+}
+
+.metrica__nota {
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
+  margin-top: var(--space-1);
+}
+
+.metricas__aviso {
+  grid-column: 1 / -1;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .metricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metrica--principal {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .metrica--principal .metrica__valor {
+    font-size: var(--text-3xl);
+  }
+}

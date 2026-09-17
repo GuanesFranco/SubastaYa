@@ -1,14 +1,192 @@
+using System.Diagnostics;
+using System.Text;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using SubastaYa.Api.Hubs;
+using SubastaYa.Api.Middleware;
+using SubastaYa.Api.Notifications;
+using SubastaYa.Application.Interfaces.Persistence;
+using SubastaYa.Application.Interfaces.Services;
+using SubastaYa.Application.UseCases.Users.RegistrarUsuario;
+using SubastaYa.Application.UseCases.Users.Login;
+using SubastaYa.Application.UseCases.Users.ListarMisPujas;
+using SubastaYa.Application.UseCases.Wallets.Deposit;
+using SubastaYa.Application.UseCases.Wallets.GetWalletBalance;
+using SubastaYa.Application.UseCases.Wallets.GetWalletTransactions;
+using SubastaYa.Infrastructure.Auth;
+using SubastaYa.Infrastructure.Persistence;
+using SubastaYa.Infrastructure.Persistence.Repositories;
+using SubastaYa.Infrastructure.Workers;
+using SubastaYa.Application.UseCases.Categories.ListarCategorias;
+using SubastaYa.Application.UseCases.Auctions.CrearSubasta;
+using SubastaYa.Application.UseCases.Auctions.RealizarPuja;
+using SubastaYa.Application.UseCases.Auctions.ListarSubastas;
+using SubastaYa.Application.UseCases.Auctions.ObtenerSubasta;
+using SubastaYa.Application.UseCases.Auctions.ListarPujas;
+using SubastaYa.Application.UseCases.Auctions.ListarMisSubastas;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+        options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+builder.Services.AddProblemDetails();
+
+builder.Services.AddCors(opciones =>
+    opciones.AddPolicy("frontend", politica => politica
+        .WithOrigins("http://localhost:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials()));
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Ingresa el token JWT"
+    });
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+builder.Services.AddDbContext<SubastaYaDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IBilleteraRepository, BilleteraRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddSingleton<IJwtProvider, JwtProvider>();
+builder.Services.AddSingleton<INotificadorSubastas, NotificadorSubastasSignalR>();
+
+builder.Services.AddScoped<RegistrarUsuarioCommandHandler>();
+builder.Services.AddScoped<LoginQueryHandler>();
+builder.Services.AddScoped<GetWalletBalanceQueryHandler>();
+builder.Services.AddScoped<DepositCommandHandler>();
+builder.Services.AddScoped<GetWalletTransactionsQueryHandler>();
+
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<ISubastaRepository, SubastaRepository>();
+builder.Services.AddScoped<IAuditoriaLogRepository, AuditoriaLogRepository>();
+builder.Services.AddScoped<ListarCategoriasQueryHandler>();
+builder.Services.AddScoped<CrearSubastaCommandHandler>();
+builder.Services.AddScoped<ListarSubastasQueryHandler>();
+builder.Services.AddScoped<ObtenerSubastaQueryHandler>();
+builder.Services.AddScoped<ListarPujasQueryHandler>();
+builder.Services.AddScoped<ListarMisSubastasQueryHandler>();
+builder.Services.AddScoped<RealizarPujaCommandHandler>();
+builder.Services.AddScoped<ListarMisPujasQueryHandler>();
+
+builder.Services.AddHostedService<AuctionSettlementWorker>();
+
+var jwtSecret = builder.Configuration["Jwt:Secret"]
+    ?? throw new InvalidOperationException(
+        "Falta la clave Jwt:Secret. Configurala con: dotnet user-secrets set \"Jwt:Secret\" \"<clave>\" --project SubastaYa.Api");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async contexto =>
+            {
+                contexto.HandleResponse();
+
+                if (contexto.Response.HasStarted)
+                {
+                    return;
+                }
+
+                var problema = new ProblemDetails
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "No autenticado",
+                    Detail = "Falta el token de acceso o ya no es válido.",
+                    Instance = contexto.Request.Path
+                };
+
+                problema.Extensions["traceId"] = Activity.Current?.Id ?? contexto.HttpContext.TraceIdentifier;
+
+                contexto.Response.ContentType = "application/problem+json";
+                contexto.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+                await contexto.Response.WriteAsJsonAsync(problema);
+            },
+            OnForbidden = async contexto =>
+            {
+                if (contexto.Response.HasStarted)
+                {
+                    return;
+                }
+
+                var problema = new ProblemDetails
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Title = "Acceso denegado",
+                    Detail = "El token es válido pero no habilita esta operación.",
+                    Instance = contexto.Request.Path
+                };
+
+                problema.Extensions["traceId"] = Activity.Current?.Id ?? contexto.HttpContext.TraceIdentifier;
+
+                contexto.Response.ContentType = "application/problem+json";
+                contexto.Response.StatusCode = StatusCodes.Status403Forbidden;
+
+                await contexto.Response.WriteAsJsonAsync(problema);
+            }
+        };
+    });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<SubastaYaDbContext>();
+    dbContext.Database.Migrate();
+
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    await DbInitializer.SeedAsync(dbContext, passwordHasher);
+}
+
+app.UseMiddleware<ExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -16,32 +194,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("frontend");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+app.MapHub<AuctionHub>("/hubs/auctions");
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+
+
+
