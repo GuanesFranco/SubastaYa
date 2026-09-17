@@ -13,7 +13,6 @@ login() {
 
 get_saldo() {
     local TOKEN=$1
-    # Extrae el valor decimal de saldoDisponible
     curl -s -X GET "$API/wallets/me" \
         -H "Authorization: Bearer $TOKEN" | grep -o '"saldoDisponible":[0-9.]*' | cut -d':' -f2
 }
@@ -25,7 +24,7 @@ TOKEN_C1="$(login comprador1@test.com)"
 TOKEN_C2="$(login comprador2@test.com)"
 
 if [ -z "$TOKEN_C1" ] || [ -z "$TOKEN_C2" ]; then
-    echo "ERROR: Falló el login."
+    echo "❌ ERROR: Falló el login."
     exit 1
 fi
 
@@ -49,13 +48,18 @@ SUBASTA_ID="$(echo "$CREACION" | grep -o '"id":[0-9]*' | head -n 1 | cut -d':' -
 echo "OK (ID: $SUBASTA_ID)"
 
 echo "2. Round 1: C1 puja \$200 (Se le retienen \$200 a C1)"
-curl -s -o /dev/null -X POST "$API/auctions/$SUBASTA_ID/bids" -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN_C1" -d "{\"monto\":200}"
+R1=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$API/auctions/$SUBASTA_ID/bids" -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN_C1" -d "{\"monto\":200}")
 
 echo "3. Round 2: C2 puja \$300 (Se le retienen \$300 a C2 y se le devuelven los \$200 a C1)"
-curl -s -o /dev/null -X POST "$API/auctions/$SUBASTA_ID/bids" -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN_C2" -d "{\"monto\":300}"
+R2=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$API/auctions/$SUBASTA_ID/bids" -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN_C2" -d "{\"monto\":300}")
 
 echo "4. Round 3: C1 contraataca y puja \$400 (Se le retienen \$400 a C1 y se le devuelven los \$300 a C2)"
-curl -s -o /dev/null -X POST "$API/auctions/$SUBASTA_ID/bids" -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN_C1" -d "{\"monto\":400}"
+R3=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$API/auctions/$SUBASTA_ID/bids" -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN_C1" -d "{\"monto\":400}")
+
+if [ "$R1" -ne 201 ] || [ "$R2" -ne 201 ] || [ "$R3" -ne 201 ]; then
+    echo "❌ ERROR: Una de las pujas falló en insertarse (R1: $R1, R2: $R2, R3: $R3)."
+    exit 1
+fi
 
 echo "5. Consultando saldos finales..."
 SALDO_C1_FINAL=$(get_saldo "$TOKEN_C1")
@@ -65,6 +69,15 @@ echo ""
 echo "💰 Saldo Final Comprador 1: \$$SALDO_C1_FINAL"
 echo "💰 Saldo Final Comprador 2: \$$SALDO_C2_FINAL"
 echo ""
-echo "== Análisis Final =="
-echo "👉 El Comprador 1 debería tener exactamente \$400 MENOS que su saldo inicial (porque él va ganando la subasta actual)."
-echo "👉 El Comprador 2 debería tener el MISMO saldo inicial con el que empezó (se le devolvió el 100% de su plata al ser superado)."
+
+# Usamos awk para comparar matemáticamente los saldos decimales
+MATCH_C1=$(awk -v inicial="$SALDO_C1_INICIAL" -v final="$SALDO_C1_FINAL" 'BEGIN { if(final == inicial - 400) print 1; else print 0}')
+MATCH_C2=$(awk -v inicial="$SALDO_C2_INICIAL" -v final="$SALDO_C2_FINAL" 'BEGIN { if(final == inicial) print 1; else print 0}')
+
+if [ "$MATCH_C1" -eq 1 ] && [ "$MATCH_C2" -eq 1 ]; then
+    echo "✅ ÉXITO: El Ledger retuvo e hizo los refunds con exactitud centesimal."
+    exit 0
+else
+    echo "❌ FALLÓ: Los números de la billetera no cuadran matemáticamente."
+    exit 1
+fi

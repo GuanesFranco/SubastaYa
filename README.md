@@ -6,7 +6,7 @@ regla anti-sniping y liquidación automática por background worker.
 Trabajo práctico de la cátedra **Proyecto de Software**.
 
 **Stack:** .NET 8 · ASP.NET Core Web API · SQL Server Express · EF Core 8 Code First ·
-SignalR · JWT + BCrypt · Swagger · xUnit.
+SignalR · JWT + BCrypt · Swagger.
 
 ---
 
@@ -102,23 +102,38 @@ la recrea y la vuelve a sembrar.
 6. **Cierre**: cuando vence una subasta con ofertas, el worker la liquida y la sala muestra el
    resultado; el ganador ve el débito y el vendedor el crédito en su billetera.
 
-## Tests
+## Tests Automatizados (QA Suite)
+
+La carpeta `/scripts` contiene una suite de 8 pruebas automatizadas de integración e infraestructura escritas en Bash.
+
+> [!WARNING]
+> **NO EJECUTAR LA SUITE DE PRUEBAS ANTES DE UNA DEMO.**
+> La suite no es idempotente: siembra decenas de subastas falsas en el catálogo (algunas activas hasta el 2030) y retiene fondos de las billeteras de los usuarios de prueba. Varias corridas sin reiniciar la base de datos terminarán agotando el saldo de los compradores.
+
+Para ejecutar toda la suite de pruebas de forma automática y recopilar los resultados:
 
 ```bash
-dotnet test
+./scripts/correr-todas.sh
 ```
 
-### Prueba de concurrencia
+### Scripts Individuales
 
-Con la API levantada, dispara dos pujas idénticas y simultáneas sobre la misma subasta. Una
-responde `201` y la otra `409`, que es el control optimista funcionando:
+1. **`prueba-concurrencia.sh`**: Dispara decenas de pujas al mismo milisegundo exigiendo al menos un rechazo de código `409` para demostrar el bloqueo optimista de la base de datos.
+2. **`prueba-volumen.sh`**: Smoke test que lanza cientos de peticiones HTTP concurrentes validando que el servidor Kestrel no rechace conexiones.
+3. **`prueba-reglas-negocio.sh`**: Valida por API los códigos de error exactos de dominio (422, 400, 401) por auto-puja, montos inválidos y falta de saldo.
+4. **`prueba-worker.sh`**: Crea una subasta rápida y hace polling esperando que el *BackgroundService* asíncrono detecte el vencimiento y la marque como `Desierta`.
+5. **`prueba-antisniping.sh`**: Simula una puja en los últimos 45 segundos y verifica con la API que la extensión automática agregue exactamente 120 segundos al cierre.
+6. **`prueba-ledger.sh`**: Demuestra la precisión transaccional de las billeteras restando y validando decimales tras varias pujas concurrentes.
+7. **`prueba-paginacion.sh`**: Inyecta subastas y solicita offsets para demostrar el funcionamiento del motor de SQL Server.
+
+### Limpieza de Datos (Reset)
+
+Si la suite dejó tu base de datos inutilizable para una demostración, utiliza el script de reseteo:
 
 ```bash
-./scripts/prueba-concurrencia.sh
+./scripts/reset-db.sh
 ```
-
-Acepta la URL base y el id de la subasta como argumentos:
-`./scripts/prueba-concurrencia.sh http://localhost:5058/api/v1 1`
+*Asegúrate de apagar la API antes de correrlo. El próximo `dotnet run` recreará y sembrará la base de cero.*
 
 ---
 
