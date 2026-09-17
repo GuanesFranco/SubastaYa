@@ -36,6 +36,16 @@
   gap: var(--space-2);
   flex: 1;
   min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.navbar__links::-webkit-scrollbar {
+  display: none;
+}
+
+.navbar__links--invitado {
+  overflow: visible;
 }
 
 .navbar__link {
@@ -93,6 +103,7 @@
   padding-left: var(--space-4);
   border-left: 1px solid var(--glass-border);
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .navbar__saldo {
@@ -181,7 +192,7 @@
   box-shadow: var(--focus-ring);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
   .navbar {
     flex-wrap: wrap;
     gap: var(--space-3);
@@ -191,19 +202,12 @@
   .navbar__links {
     order: 3;
     flex: 1 1 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
     padding-bottom: 2px;
-  }
-
-  .navbar__links::-webkit-scrollbar {
-    display: none;
   }
 
   .navbar__links--invitado {
     order: 0;
     flex: 1 1 auto;
-    overflow: visible;
     padding-bottom: 0;
   }
 
