@@ -48,6 +48,8 @@ echo ""
 
 if [ "$COUNT_1" -eq 10 ] && [ "$COUNT_2" -eq 10 ] && [ "$COUNT_SEARCH" -ge 1 ]; then
     echo "✅ ÉXITO: El motor de paginación de SQL Server funciona impecable."
+    exit 0
 else
     echo "❌ FALLÓ: La paginación trajo números inesperados."
+    exit 1
 fi

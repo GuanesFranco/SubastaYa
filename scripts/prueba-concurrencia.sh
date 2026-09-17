@@ -1,97 +1,89 @@
 #!/usr/bin/env bash
-#
-# Prueba de concurrencia: dos pujas idénticas y simultáneas sobre la misma subasta.
-# Una tiene que responder 201 Created y la otra 409 Conflict, gracias al control
-# optimista por la columna Version.
-#
-# Uso:  ./prueba-concurrencia.sh [URL_BASE] [ID_SUBASTA]
-#
 set -u
 
 API="${1:-http://localhost:5058/api/v1}"
-SUBASTA_ID="${2:-auto}"
 PASSWORD="Test1234!"
 
-login() {
-    curl -s -X POST "$API/sessions" \
-        -H "Content-Type: application/json" \
-        -d "{\"email\":\"$1\",\"password\":\"$PASSWORD\"}" |
-        grep -o '"token":"[^"]*"' | cut -d'"' -f4
-}
+echo "== Iniciando Prueba de Concurrencia (Choque Optimista) =="
 
-echo "== Autenticando a los dos compradores =="
-TOKEN_1="$(login comprador1@test.com)"
-TOKEN_2="$(login comprador2@test.com)"
+# 1. Login de Vendedor
+TOKEN_VEND="$(curl -s -X POST "$API/sessions" \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"vendedor@test.com\",\"password\":\"$PASSWORD\"}" | \
+    grep -o '"token":"[^"]*"' | cut -d'"' -f4)"
 
-if [ -z "$TOKEN_1" ] || [ -z "$TOKEN_2" ]; then
-    echo "ERROR: no se pudo obtener el token. ¿Está levantada la API en $API?"
-    exit 1
-fi
+# 2. Login de Comprador
+TOKEN_COMP="$(curl -s -X POST "$API/sessions" \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"comprador1@test.com\",\"password\":\"$PASSWORD\"}" | \
+    grep -o '"token":"[^"]*"' | cut -d'"' -f4)"
 
-if [ "$SUBASTA_ID" = "auto" ]; then
-    echo "== Creando una nueva subasta automáticamente =="
-    TOKEN_VENDEDOR="$(login vendedor@test.com)"
+AHORA_UTC=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+FIN_UTC=$(date -u -d "$AHORA_UTC + 10 days" +"%Y-%m-%dT%H:%M:%SZ")
+INICIO_UTC=$(date -u -d "$AHORA_UTC - 10 days" +"%Y-%m-%dT%H:%M:%SZ")
+
+CHOQUES_DETECTADOS=0
+
+for RONDA in 1 2 3; do
+    echo "--- RONDA $RONDA ---"
+    echo -n "1. Creando subasta nueva... "
     CREACION=$(curl -s -X POST "$API/auctions" \
         -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $TOKEN_VENDEDOR" \
-        -d "{\"titulo\":\"Prueba de concurrencia automatica\",\"descripcion\":\"Generada por el script\",\"precioBase\":1000,\"incrementoMinimo\":100,\"fechaInicio\":\"2020-01-01T00:00:00Z\",\"fechaFin\":\"2030-01-01T00:00:00Z\",\"categoriaId\":1,\"urlImagen\":\"https://test.com/img.jpg\"}")
+        -H "Authorization: Bearer $TOKEN_VEND" \
+        -d "{\"titulo\":\"Choque Ronda $RONDA\",\"descripcion\":\"Test\",\"precioBase\":100,\"incrementoMinimo\":100,\"fechaInicio\":\"$INICIO_UTC\",\"fechaFin\":\"$FIN_UTC\",\"categoriaId\":1,\"urlImagen\":\"https://img.com\"}")
     
     SUBASTA_ID="$(echo "$CREACION" | grep -o '"id":[0-9]*' | head -n 1 | cut -d':' -f2)"
-    if [ -z "$SUBASTA_ID" ]; then
-        echo "ERROR: no se pudo crear la subasta automática."
+    echo "OK (ID: $SUBASTA_ID)"
+
+    echo "2. Preparando 15 peticiones concurrentes simultáneas al mismo milisegundo..."
+    
+    TMP_DIR=$(mktemp -d)
+    
+    for i in {1..15}; do
+        curl -s -w '%{http_code}\n' -o /dev/null -X POST "$API/auctions/$SUBASTA_ID/bids" -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN_COMP" -d "{\"monto\":300}" > "$TMP_DIR/$i.txt" &
+    done
+
+    # Esperamos a que todas las peticiones terminen
+    wait
+
+    # Leemos todos los archivos juntos
+    RESULTADOS=$(cat "$TMP_DIR"/*.txt)
+    rm -rf "$TMP_DIR"
+
+    COUNT_201=$(echo "$RESULTADOS" | grep -c "201" || true)
+    COUNT_409=$(echo "$RESULTADOS" | grep -c "409" || true)
+    COUNT_422=$(echo "$RESULTADOS" | grep -c "422" || true)
+    COUNT_500=$(echo "$RESULTADOS" | grep -c "500" || true)
+
+    echo "Resultados Ronda $RONDA:"
+    echo " - 201 (Aceptada): $COUNT_201"
+    echo " - 409 (Choque Concurrencia): $COUNT_409"
+    echo " - 422 (Rebotada Normal): $COUNT_422"
+    
+    if [ "$COUNT_500" -gt 0 ]; then
+        echo "❌ ERROR FATAL: Aparecieron respuestas 500 (Deadlock en BD u otro error de servidor)."
         exit 1
     fi
-    echo "   Subasta creada con ID: $SUBASTA_ID"
-fi
 
-echo "== Leyendo el estado de la subasta $SUBASTA_ID =="
-DETALLE="$(curl -s "$API/auctions/$SUBASTA_ID")"
-PRECIO="$(echo "$DETALLE" | grep -o '"precioActual":[0-9.]*' | cut -d':' -f2)"
+    if [ "$COUNT_201" -ne 1 ]; then
+        echo "❌ ERROR: Debió registrarse exactamente 1 puja, pero se registraron $COUNT_201."
+        exit 1
+    fi
 
-if [ -z "$PRECIO" ]; then
-    echo "ERROR: no se pudo leer la subasta $SUBASTA_ID."
+    if [ "$COUNT_409" -gt 0 ]; then
+        echo "✅ CHOQUE CONFIRMADO: El control optimista atajó $COUNT_409 peticiones."
+        CHOQUES_DETECTADOS=$((CHOQUES_DETECTADOS + 1))
+        break # Si ya chocó, podemos cortar el bucle
+    else
+        echo "⚠️  No hubo choques optimistas (409) en esta ronda, fueron todos rechazados normales (422) por velocidad de CPU."
+    fi
+    echo ""
+done
+
+if [ "$CHOQUES_DETECTADOS" -eq 0 ]; then
+    echo "❌ FALLO DE SUITE: Después de 3 rondas, no logramos generar un conflicto de concurrencia optimista (409)."
     exit 1
 fi
 
-MONTO="$(awk -v p="$PRECIO" 'BEGIN { printf "%.2f", p + 5000 }')"
-echo "   Precio actual: $PRECIO  ->  ambos van a pujar $MONTO"
-
-pujar() {
-    curl -s -o /dev/null -w "%{http_code}" \
-        -X POST "$API/auctions/$SUBASTA_ID/bids" \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $1" \
-        -d "{\"monto\":$MONTO}"
-}
-
-echo "== Disparando las dos pujas en paralelo =="
-pujar "$TOKEN_1" > /tmp/subastaya_puja_1 &
-PID_1=$!
-pujar "$TOKEN_2" > /tmp/subastaya_puja_2 &
-PID_2=$!
-wait $PID_1 $PID_2
-
-CODIGO_1="$(cat /tmp/subastaya_puja_1)"
-CODIGO_2="$(cat /tmp/subastaya_puja_2)"
-rm -f /tmp/subastaya_puja_1 /tmp/subastaya_puja_2
-
-echo "   comprador1 -> HTTP $CODIGO_1"
-echo "   comprador2 -> HTTP $CODIGO_2"
-echo
-
-if { [ "$CODIGO_1" = "201" ] && [ "$CODIGO_2" = "409" ]; } ||
-   { [ "$CODIGO_1" = "409" ] && [ "$CODIGO_2" = "201" ]; }; then
-    echo "OK: una puja fue aceptada (201) y la otra rechazada por concurrencia (409)."
-    exit 0
-fi
-
-if { [ "$CODIGO_1" = "201" ] && [ "$CODIGO_2" = "422" ]; } ||
-   { [ "$CODIGO_1" = "422" ] && [ "$CODIGO_2" = "201" ]; }; then
-    echo "OK (variante válida): una puja entró primero y la segunda llegó cuando el precio"
-    echo "ya había subido, así que fue rechazada por monto insuficiente (422) en vez de 409."
-    echo "El control de concurrencia igual hizo su trabajo: no se aceptaron las dos."
-    exit 0
-fi
-
-echo "FALLO: se esperaba 201 + 409. Revisar el control optimista de Subasta.Version."
-exit 1
+echo "✅ ÉXITO: El sistema previene corrupciones y bloqueos optimistas correctamente bajo estrés."
+exit 0
